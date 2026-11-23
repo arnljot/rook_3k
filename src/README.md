@@ -16,7 +16,7 @@ python src/denise_itx_case.py [output_dir]
 
 | Argument | Default | Meaning |
 |---|---|---|
-| `output_dir` | the repository root | Where the STEP files are written. Existing files with the same names are overwritten. |
+| `output_dir` | `out/` in the repository root | Where the STEP files are written. Existing files with the same names are overwritten. |
 
 All dimensions are constants near the top of the file, in millimetres. Change them there and run the script again. Dimensions marked `ESTIMAT` in the comments are estimates that have not yet been checked against the hardware.
 

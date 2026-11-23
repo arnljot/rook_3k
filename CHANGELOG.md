@@ -5,7 +5,8 @@ All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are
 ## Unreleased
 
 - STL exports removed; the model script no longer writes them.
-- Scripts moved to `src/`, with a README on how to run them. Both take an optional output directory and write to the repository root by default.
+- Scripts moved to `src/`, with a README on how to run them. Both take an optional output directory.
+- STEP files and renders moved to `out/`, which is where the model script now writes by default. The 3MF project stays in the repository root.
 - make_3mf.py names its output `DeniseITX_kabinett_<version>.3mf`.
 - Logo added: a chess rook with circuit board traces, as mark, lockup and badge.
 - The project is named Rook 3K. File names keep the `DeniseITX_` prefix for now.

@@ -8,7 +8,7 @@ Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
 portene bak og Zorro-slottene nederst.
 
 Run:  python src/denise_itx_case.py [output_dir]
-      Writes one STEP file per part plus the assembly. output_dir defaults to the repository root.
+      Writes one STEP file per part plus the assembly. output_dir defaults to out/ in the repository root.
 Alle maal i mm. Maal merket ESTIMAT maa kontrolleres med skyvelaer.
 """
 import os
@@ -508,8 +508,8 @@ PARTS = {
 }
 
 if __name__ == "__main__":
-    # Output directory: first argument, else the repository root (the parent of src/)
-    out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Output directory: first argument, else out/ in the repository root (the parent of src/)
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out")
     os.makedirs(out, exist_ok=True)
     asm = cq.Assembly(name="DeniseITX_kabinett")
     for name, (fn, col) in PARTS.items():
