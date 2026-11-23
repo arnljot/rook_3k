@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.14 - Simpler shelf
+
+- Shelf reduced to a plain T with three small gussets.
+- Slotted holes covering the mounting patterns in the Mitsubishi MF355B specification and SFF-8301.
+
 ## v0.13 - Floppy shelf
 
 - Shelf on the left side panel that carries the floppy drive; body height 227 mm.

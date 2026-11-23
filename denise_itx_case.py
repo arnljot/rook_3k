@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.13 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.14 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -98,10 +98,17 @@ DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkorte
 
 # skruer M3
 # floppyhylle paa venstre sidepanel
-FD_HOLES_Y = [21.0, 51.0, 81.0]   # skruehull paa drivens side, fra drivens forkant ESTIMAT, maa maales
-FD_HOLE_UP = 5.0                  # hullsenter over drivens bunnplate ESTIMAT, maa maales
+# Tre langhullsfelt som dekker kjente hullmoenstre for 3,5" floppy (Mitsubishi MF355B-spesifikasjonen, tabell 5-6):
+#   type 1: 6,35 over bunnplaten, hull 5,1 og 104,2 fra drivens forkant
+#   type 2: 6 over bunnplaten, hull 35 og 90
+#   type 3: 5 over bunnplaten, hull 21 og 81
+# samt SFF-8301-moenster med 101,6 mellom ytterste hull og ett hull 30 foran det bakerste. Skruer M3 x 0,5.
+FD_SLOTS_Y = [(3.0, 49.0), (59.0, 93.5), (99.5, 127.0)]   # fra drivens forkant
+FD_HOLE_UP = (5.0, 6.35)          # hullsenter over drivens bunnplate, laveste og hoyeste
+FD_REAR_HOLE = 122.0
 SHELF_T = 4.0
-SHELF_Y0, SHELF_Y1 = 1.5, 138.0   # hyllas utstrekning bak fronten
+SHELF_Y0, SHELF_Y1 = 1.5, FD_REAR_HOLE + 10.0   # hyllas utstrekning bak fronten
+GUSSET = 15.0                     # smaa trekanter under hylla
 PILOT = 2.6
 CLEAR = 3.4
 
@@ -304,14 +311,13 @@ def side_panel():
     ya, yb = T_FRONT + SHELF_Y0, T_FRONT + SHELF_Y1
     sh = box(T, fb.xmax, ya, yb, zt - SHELF_T, zt)
     for y in (ya, (ya + yb) / 2 - 1.5, yb - 3.0):
-        g = (cq.Workplane("XZ").polyline([(T, zt - SHELF_T), (T + 42.0, zt - SHELF_T), (T, zt - SHELF_T - 35.0)]).close()
+        g = (cq.Workplane("XZ").polyline([(T, zt - SHELF_T), (T + GUSSET, zt - SHELF_T), (T, zt - SHELF_T - GUSSET)]).close()
              .extrude(-3.0).translate((0, y, 0)))
         sh = sh.union(g)
-    hx = fb.xmax - FD_HOLE_UP
-    for hy in FD_HOLES_Y:
-        y = T_FRONT + hy
-        sh = sh.cut(box(hx - CLEAR / 2, hx + CLEAR / 2, y - 3.2, y + 3.2, zt - SHELF_T - 1, zt + 1))      # langhull for M3
-        sh = sh.cut(box(hx - 3.3, hx + 3.3, y - 4.8, y + 4.8, zt - SHELF_T - 1, zt - SHELF_T + 2.0))        # forsenkning for skruehode
+    hx0, hx1 = fb.xmax - FD_HOLE_UP[1] - CLEAR / 2, fb.xmax - FD_HOLE_UP[0] + CLEAR / 2
+    for (sa, sb) in FD_SLOTS_Y:
+        sh = sh.cut(box(hx0, hx1, T_FRONT + sa, T_FRONT + sb, zt - SHELF_T - 1, zt + 1))                    # langhull for M3
+        sh = sh.cut(box(hx0 - 1.8, hx1 + 1.8, T_FRONT + sa - 1.8, T_FRONT + sb + 1.8, zt - SHELF_T - 1, zt - SHELF_T + 1.8))  # forsenkning for hode og skive
     s = s.union(sh)
     return s
 
@@ -422,5 +428,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.13.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.14.step"))
     print("ok", out)
