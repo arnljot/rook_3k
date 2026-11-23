@@ -18,7 +18,7 @@ Work in progress. The parts are modelled but have not been test printed, and sev
 
 ## Hardware
 
-The model is designed for M3 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `denise_itx_case.py` can be changed to suit other inserts.
+The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `denise_itx_case.py` can be changed to suit other inserts.
 
 ## Contents
 
