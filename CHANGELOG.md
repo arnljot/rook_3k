@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.3 - Slimmer top edge
+
+- Top edge reduced to 22 mm, close to the side edges.
+- Centre groove widened to 14 mm; chamfers 20.3 mm.
+- Buttons turned upright and moved towards the top right corner.
+
 ## v0.2 - First design review
 
 - Floppy drive rotated 180 degrees and raised so the slot sits directly below the LED windows.

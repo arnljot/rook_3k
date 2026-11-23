@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.2 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.3 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -15,7 +15,7 @@ from cadquery import Vector as V
 # ---------------------------------------------------------------- parametre
 W = 95.0            # utvendig bredde
 D = 187.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = 220.0          # hoyde kabinettkropp uten fot
+HB = 210.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
 T_REAR = 3.0        # bakpanel
@@ -26,11 +26,11 @@ FOOT_INSET = 4.0
 REC = 10.0          # dybde chamfer
 FLOOR = 2.5         # gods bak sporet
 T_FRONT = REC + FLOOR
-CHAMFER_W = 23.3    # bredde paa skraa flate fra hver side
-SIDE_M = (W - 8.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre
-TOP_M = 32.0        # flat kant topp
+CHAMFER_W = 20.3    # bredde paa skraa flate fra hver side
+SIDE_M = (W - 14.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre
+TOP_M = 22.0        # flat kant topp
 BOT_M = 45.0        # flat kant bunn
-GROOVE = 8.0        # flatt spor i bunn av chamfer
+GROOVE = 14.0       # flatt spor i bunn av chamfer
 STEEP = 4.0         # bredde paa bratt chamfer topp/bunn
 SLOT_L, SLOT_W = 100.0, 8.0          # diskaapning
 EJECT_L, EJECT_W = 21.0, 5.0         # eject-knapp ESTIMAT plassering
@@ -38,9 +38,13 @@ EJECT_DX = 11.0     # eject senter i X relativt til sporets senter ESTIMAT
 EJECT_FROM_TOP = 16.5                # eject senter under ovre ende av diskaapning ESTIMAT
 LED_TOP_GAP = 2.0   # fra toppen av sporet til forste LED
 LED_PITCH = 7.0
-BTN_POCKET_W, BTN_POCKET_H, BTN_POCKET_D = 32.0, 12.0, 3.0   # fordypning for power/reset oppe til hoyre
-BTN_H = 7.0
-BTN_PWR_W, BTN_RST_W = 15.0, 9.0
+BTN_POCKET_D = 3.0  # fordypning for power/reset i hoyre kant, oppe
+BTN_W = 7.0         # knappene staar paa hoykant
+BTN_PWR_L, BTN_RST_L = 15.0, 10.0
+BTN_GAP, BTN_EDGE = 4.0, 2.5
+BTN_TOP = 8.0       # fra overkant kabinett til fordypning
+BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
+BTN_CLEAR = 0.3
 LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
 
 # hovedkort (Mini-ITX 170 x 170)
@@ -107,6 +111,24 @@ def rect_wire(y):
     return cq.Wire.makePolygon(pts)
 
 
+def button_layout():
+    xc = W - SIDE_M / 2
+    pw = BTN_W + 2 * BTN_EDGE
+    pz1 = HB - BTN_TOP
+    pz0 = pz1 - (2 * BTN_EDGE + BTN_PWR_L + BTN_GAP + BTN_RST_L)
+    z = pz1 - BTN_EDGE
+    holes = []
+    for l in (BTN_PWR_L, BTN_RST_L):
+        holes.append((xc - BTN_W / 2, xc + BTN_W / 2, z - l, z))
+        z -= l + BTN_GAP
+    return (xc - pw / 2, xc + pw / 2, pz0, pz1), holes
+
+
+def ref_buttons():
+    # knappetopper i hvileposisjon, kun for visning
+    return [box(x0, x1, -BTN_OUT, BTN_POCKET_D + 2, z0, z1) for (x0, x1, z0, z1) in button_layout()[1]]
+
+
 # ---------------------------------------------------------------- deler
 def front_panel():
     p = rounded(0, T_FRONT)
@@ -121,15 +143,12 @@ def front_panel():
     # LED-vinduer i toppen av sporet
     for z in Z_LEDS:
         p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
-    # fordypning med rektangulaere power- og resetknapper i ovre kant, til hoyre
-    px1 = W - SIDE_M
-    px0 = px1 - BTN_POCKET_W
-    pzc = Z_REC1 + 3.0 + BTN_POCKET_H / 2 + 6.0
-    p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pzc - BTN_POCKET_H / 2, pzc + BTN_POCKET_H / 2))
-    bx = px1 - 2.5
-    for w in (BTN_PWR_W, BTN_RST_W):
-        p = p.cut(box(bx - w, bx, -1, T_FRONT + 1, pzc - BTN_H / 2, pzc + BTN_H / 2))
-        bx -= w + 3.0
+    # fordypning med staaende power- og resetknapp i hoyre kant, oppe
+    (px0, px1, pz0, pz1), holes = button_layout()
+    p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pz0, pz1))
+    for (x0, x1, z0, z1) in holes:
+        c = BTN_CLEAR
+        p = p.cut(box(x0 - c, x1 + c, -1, T_FRONT + 1, z0 - c, z1 + c))
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -282,8 +301,10 @@ if __name__ == "__main__":
     asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
     asm.add(comp, name="REF_komponentsone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
     asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
+    for i, b in enumerate(ref_buttons()):
+        asm.add(b, name=f"REF_knapp{i+1}", color=cq.Color(0.9, 0.88, 0.82))
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.2.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.3.step"))
     print("ok", out)
