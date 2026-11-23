@@ -44,6 +44,8 @@ Printers with a bed shorter than 227 mm in both directions cannot print the main
 
 The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `src/denise_itx_case.py` can be changed to suit other inserts.
 
+The power and reset buttons are intended to press ordinary MX-style mechanical keyboard switches. The two switches snap into a plate in the U-bracket with 14 x 14 mm cut-outs, and the printed buttons sit on the switch stems. Keyboard switches are momentary. The switch dimensions in the model are taken from the common MX footprint and have not yet been checked against a fitted switch.
+
 ## Contents
 
 - `src/denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
