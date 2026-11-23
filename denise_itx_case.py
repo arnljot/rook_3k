@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.14 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.15 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -90,7 +90,7 @@ COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
 ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u fra Zorro-kant, v fra bakkant)
 
 # floppy standard 3,5"
-FD_W, FD_H, FD_L = 101.6, 25.4, 146.0
+FD_W, FD_H, FD_L = 101.6, 25.4, 129.0   # lengde = 21 + 60 + 30 + 18 (maalt med skyvelaer, ikke proevd)
 FD_SLOT_FROM_TOP = 9.0 + 3.3 / 2   # 9 mm fra lokket til disken (maalt), pluss halv disktykkelse
 PICO_H, PICO_T, PICO_W = 36.0, 23.0, 45.0   # PicoPSU over hovedkortet, tykkelse, bredde (maalt)
 PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
@@ -98,14 +98,11 @@ DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkorte
 
 # skruer M3
 # floppyhylle paa venstre sidepanel
-# Tre langhullsfelt som dekker kjente hullmoenstre for 3,5" floppy (Mitsubishi MF355B-spesifikasjonen, tabell 5-6):
-#   type 1: 6,35 over bunnplaten, hull 5,1 og 104,2 fra drivens forkant
-#   type 2: 6 over bunnplaten, hull 35 og 90
-#   type 3: 5 over bunnplaten, hull 21 og 81
-# samt SFF-8301-moenster med 101,6 mellom ytterste hull og ett hull 30 foran det bakerste. Skruer M3 x 0,5.
-FD_SLOTS_Y = [(3.0, 49.0), (59.0, 93.5), (99.5, 127.0)]   # fra drivens forkant
-FD_HOLE_UP = (5.0, 6.35)          # hullsenter over drivens bunnplate, laveste og hoyeste
-FD_REAR_HOLE = 122.0
+# Noyaktige hull for drivens sidehull, maalt med skyvelaer (ikke proevd): 21, 81 og 111 fra drivens forkant. M3 x 0,5.
+FD_HOLES_Y = [21.0, 81.0, 111.0]
+FD_HOLE_UP = 5.0                  # hullsenter over drivens bunnplate. ESTIMAT etter MF355B type 3, maa maales
+FD_GAP = 0.3                      # luft mellom drivens forkant og baksiden av frontpanelet
+FD_REAR_HOLE = FD_HOLES_Y[-1]
 SHELF_T = 4.0
 SHELF_Y0, SHELF_Y1 = 1.5, FD_REAR_HOLE + 10.0   # hyllas utstrekning bak fronten
 GUSSET = 15.0                     # smaa trekanter under hylla
@@ -314,10 +311,11 @@ def side_panel():
         g = (cq.Workplane("XZ").polyline([(T, zt - SHELF_T), (T + GUSSET, zt - SHELF_T), (T, zt - SHELF_T - GUSSET)]).close()
              .extrude(-3.0).translate((0, y, 0)))
         sh = sh.union(g)
-    hx0, hx1 = fb.xmax - FD_HOLE_UP[1] - CLEAR / 2, fb.xmax - FD_HOLE_UP[0] + CLEAR / 2
-    for (sa, sb) in FD_SLOTS_Y:
-        sh = sh.cut(box(hx0, hx1, T_FRONT + sa, T_FRONT + sb, zt - SHELF_T - 1, zt + 1))                    # langhull for M3
-        sh = sh.cut(box(hx0 - 1.8, hx1 + 1.8, T_FRONT + sa - 1.8, T_FRONT + sb + 1.8, zt - SHELF_T - 1, zt - SHELF_T + 1.8))  # forsenkning for hode og skive
+    hx = fb.xmax - FD_HOLE_UP
+    for hy in FD_HOLES_Y:
+        y = T_FRONT + FD_GAP + hy
+        sh = sh.cut(cyl((hx, y, zt - SHELF_T - 1), (0, 0, 1), CLEAR / 2, SHELF_T + 2))
+        sh = sh.cut(cyl((hx, y, zt - SHELF_T - 1), (0, 0, 1), 3.2, 1.0 + 1.8))      # forsenkning for skruehode
     s = s.union(sh)
     return s
 
@@ -382,7 +380,7 @@ def ref_board():
 
 def ref_floppy():
     xl = XC - FD_SLOT_FROM_TOP          # lokket mot venstre
-    return box(xl, xl + FD_H, T_FRONT, T_FRONT + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
+    return box(xl, xl + FD_H, T_FRONT + FD_GAP, T_FRONT + FD_GAP + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
 
 
 def ref_picopsu():
@@ -428,5 +426,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.14.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.15.step"))
     print("ok", out)

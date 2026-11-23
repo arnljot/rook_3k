@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.15 - Exact floppy holes
+
+- Slots replaced by three exact M3 holes at 21, 81 and 111 mm from the drive front; drive length 129 mm.
+
 ## v0.14 - Simpler shelf
 
 - Shelf reduced to a plain T with three small gussets.
