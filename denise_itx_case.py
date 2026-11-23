@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.6 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.7 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -210,7 +210,7 @@ def u_bracket():
     return u
 
 
-FOOT_SCREWS = [(10.0, 27.0), (86.0, 27.0), (10.0, 168.0), (86.0, 168.0)]
+FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, 168.0), (W - 10.0, 168.0)]
 
 
 def side_panel():
@@ -269,7 +269,7 @@ def foot():
         for ya in (y0, y1 - rw):
             f = f.union(box(x, x + 4.0, ya + 1.5 if ya == y0 else ya, ya + rw if ya == y0 else ya + rw - 1.5, -FOOT_H, 0))
     for (x, y) in FOOT_SCREWS:
-        f = f.union(box(x - 5, x + 5, y - 5, y + 5, -FOOT_H, 0).intersect(box(x0, x1, y0, y1, -FOOT_H, 0)))
+        f = f.union(box(x - 5, x + 5, y - 5, y + 5, -FOOT_H, 0).intersect(box(x0 + 1.5, x1 - 1.5, y0, y1, -FOOT_H, 0)))
         f = f.cut(cyl((x, y, -10.0), (0, 0, 1), PILOT / 2, 11.0))
     return f
 
@@ -324,5 +324,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.6.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.7.step"))
     print("ok", out)

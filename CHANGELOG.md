@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.7 - Foot symmetry fix
+
+- Foot screw blocks were asymmetric and filled the slats on one side. Now mirrored and inset.
+
 ## v0.6 - Badge recess
 
 - Top edge grooves removed; chamfer groove limited to the left chamfer face.
