@@ -4,6 +4,7 @@ All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are
 
 ## Unreleased
 
+- Logo added: a chess rook with circuit board traces, as mark, lockup and badge.
 - The project is named Rook 3K. File names keep the `DeniseITX_` prefix for now.
 - Source location set to https://github.com/arnljot/rook_3k.
 - Licensed under CERN-OHL-S-2.0. Copyright and licence notices added to README and scripts.

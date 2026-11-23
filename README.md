@@ -1,5 +1,7 @@
 # Rook 3K
 
+![Rook 3K](logo/rook3k_lockup.svg)
+
 A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
 ![Rook 3K seen from four angles](DeniseITX_kabinett_v0.21_oversikt.png)
@@ -25,6 +27,7 @@ The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](htt
 - `denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
 - `make_3mf.py` writes a Bambu Studio project with one build plate per part. It needs a `bambu_template.3mf` saved from your own Bambu Studio.
 - `*.step` are the exported parts and the full assembly.
+- `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
 
 ## Credits
 
