@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.5 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.6 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -43,7 +43,9 @@ BTN_W = 7.0         # knappene staar paa hoykant
 BTN_PWR_L, BTN_RST_L = 15.0, 10.0
 BTN_GAP, BTN_EDGE = 2.0, 2.5
 DECO_W, DECO_D = 1.8, 0.5       # pyntespor
-LOGO = 22.0                     # kvadratisk felt for logo mellom sporene i toppkanten
+DECO_END = 1.0                  # sporet stopper saa langt fra chamferens topp- og bunnkant
+BADGE, BADGE_MARGIN, BADGE_D = 25.0, 1.0, 1.0   # fordypning for 25 x 25 pc-badge
+BADGE_X, BADGE_Z = 6.5, 6.5     # fra venstre side og fra underkant front
 BTN_XC = 7.5        # knappenes senter fra venstre side. MX-bryteren maa da staa ca 3,6 mm til hoyre for knappen
 BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
 BTN_CLEAR = 0.3
@@ -155,10 +157,16 @@ def front_panel():
     dy = DECO_D * math.hypot(REC, CHAMFER_W) / CHAMFER_W
     gx = SIDE_M + CHAMFER_W / 2 - DECO_W / 2
     shifted = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True).translate(V(0, dy, 0))
-    p = p.cut(cq.Workplane("XY").add(shifted).intersect(box(gx, gx + DECO_W, -1, T_FRONT, 0, HB)))
-    # to like spor i toppkanten som rammer inn logofeltet
-    for x in (SIDE_M, SIDE_M + DECO_W + LOGO):
-        p = p.cut(box(x, x + DECO_W, -1, DECO_D, Z_REC1, HB + 1))
+    def zlim(x):
+        t = (x - SIDE_M) / CHAMFER_W
+        return Z_REC0 + STEEP * t + DECO_END, Z_REC1 - STEEP * t - DECO_END
+    (a0, a1), (b0, b1) = zlim(gx), zlim(gx + DECO_W)
+    strip = (cq.Workplane("XZ").polyline([(gx, a0), (gx + DECO_W, b0), (gx + DECO_W, b1), (gx, a1)]).close()
+             .extrude(-T_FRONT).translate((0, -1, 0)))
+    p = p.cut(cq.Workplane("XY").add(shifted).intersect(strip))
+    # fordypning for pc-badge nede til venstre
+    bs = BADGE + 2 * BADGE_MARGIN
+    p = p.cut(box(BADGE_X, BADGE_X + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -316,5 +324,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.5.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.6.step"))
     print("ok", out)

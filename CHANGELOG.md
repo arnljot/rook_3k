@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.6 - Badge recess
+
+- Top edge grooves removed; chamfer groove limited to the left chamfer face.
+- 27 x 27 x 1 mm recess for a 25 mm PC badge in the lower left corner.
+
 ## v0.5 - Front detailing
 
 - Button pocket aligned with the lower border of the top edge; gap between buttons halved; buttons moved 4 mm further left.
