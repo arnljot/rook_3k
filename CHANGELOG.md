@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.10 - Smaller buttons
+
+- Buttons reduced to 7 x 12 and 7 x 8 mm so the button pocket matches the badge recess height.
+
 ## v0.9 - Wider case, recess shifted left
 
 - Width increased to 117 mm; the chamfer field keeps its own symmetry but moves left so the floppy clears the PicoPSU.

@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.9 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.10 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -43,7 +43,7 @@ LED_TOP_GAP = 2.0   # fra toppen av sporet til forste LED
 LED_PITCH = 7.0
 BTN_POCKET_D = 3.0  # fordypning for power/reset i venstre kant
 BTN_W = 7.0         # knappene staar paa hoykant
-BTN_PWR_L, BTN_RST_L = 15.0, 10.0
+BTN_PWR_L, BTN_RST_L = 12.0, 8.0     # gir fordypning like hoy som badge-fordypningen (27)
 BTN_GAP, BTN_EDGE = 2.0, 2.5
 DECO_W, DECO_D = 1.8, 0.5       # pyntespor
 DECO_END = 1.0                  # sporet stopper saa langt fra chamferens topp- og bunnkant
@@ -341,5 +341,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.9.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.10.step"))
     print("ok", out)
