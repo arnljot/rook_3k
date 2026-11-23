@@ -3,3 +3,4 @@
 *.step -text
 *.3mf binary
 *.png binary
+*.txt text eol=lf

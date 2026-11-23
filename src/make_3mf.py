@@ -6,7 +6,8 @@ prosjekt lagret i Bambu Studio (bambu_template.3mf).
 Usage: python src/make_3mf.py <version> [template.3mf] [output_dir]
   version      label used in the file name, e.g. v0.21
   template.3mf project saved from Bambu Studio; default bambu_template.3mf in the repository root
-  output_dir   default: the repository root"""
+  output_dir   default: the repository root
+Options are read from config.txt in the repository root, or from the file given with --config <file>."""
 import os, sys, zipfile, datetime, math
 import numpy as np
 import cadquery as cq
@@ -41,9 +42,11 @@ PLATES = [
     ("fot", [("fot", d.foot(), I3)]),
     ("knapp_power", [("knapp_power", d.button(0), RX_P)]),
     ("knapp_reset", [("knapp_reset", d.button(1), RX_P)]),
-    ("zorro_blindlokk x2", [("zorro_blindlokk_1", d.zorro_cover(0), RX_M), ("zorro_blindlokk_2", d.zorro_cover(1), RX_M)]),
-    ("testbit_floppyhull", [("testbit_floppyhull", d.floppy_testbit(), I3)]),
 ]
+if d.ZORRO:
+    PLATES.append(("zorro_blindlokk x2", [("zorro_blindlokk_1", d.zorro_cover(0), RX_M), ("zorro_blindlokk_2", d.zorro_cover(1), RX_M)]))
+if d.FLOPPY:
+    PLATES.append(("testbit_floppyhull", [("testbit_floppyhull", d.floppy_testbit(), I3)]))
 
 
 def mesh(shape, R):

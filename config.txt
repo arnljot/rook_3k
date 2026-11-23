@@ -1,0 +1,64 @@
+# Rook 3K configuration
+#
+# Read by src/denise_itx_case.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
+# All dimensions are in millimetres. A key that is left out or left empty keeps its default.
+# The values below are the defaults.
+
+# --- Case size ---------------------------------------------------------------
+# Outer height (without the foot), depth and width of the case.
+# Minimum sizes apply and depend on the options below. The script stops with an error if a value
+# is too low, and warns if the case exceeds the Bambu Lab H2D single nozzle volume (325 x 320 x 325).
+# The defaults are the smallest practical case with a legacy floppy drive.
+rook_height=227
+rook_depth=210
+rook_width=117
+
+# Corner radius seen from the front, 0.5 to 6.
+rook_corner_radius=4
+
+# --- Foot ---------------------------------------------------------------------
+# The foot is a stack of horizontal grills. Its height is grills x height + (grills - 1) x gap.
+rook_foot_grill_height=3
+rook_foot_grill_gap=2.5
+rook_foot_grills=3
+
+# --- Front panel ----------------------------------------------------------------
+# The recessed chamfer field with the flat groove. false gives a flat front.
+chamfer_recess_enable=true
+
+# The thin decorative groove on the left chamfer. Needs the chamfer recess.
+deco_groove_enable=true
+
+# Recess for a 25 x 25 mm case badge.
+pc_badge_recess_enable=true
+
+# The two LED windows. The defaults fit 2 x 5 mm rectangular LEDs.
+led_window_width=2.2
+led_window_length=5
+
+# --- Floppy drive ---------------------------------------------------------------
+# Legacy 3.5" floppy drive. false removes the disk slot and the eject cut-out in the front,
+# the shelf on the side panel and the test gauge.
+floppy_legacy_enable=true
+
+# Height of the mounting holes above the bottom plate of the drive.
+# 5.0 is verified for a Chinon FZ-354 without face plate. Print the test gauge to check other drives.
+floppy_mount_hole_height=5
+
+# --- Rear panel -----------------------------------------------------------------
+# Openings, lips and blanking covers for the two Zorro slots.
+zorro_cutout_enable=true
+
+# Cut-out for a DE-15 panel connector, for example from an Indivision.
+back_port_vga_enable=true
+
+# Hole for the DC panel jack, and its diameter.
+back_port_dc_enable=true
+back_port_dc_diameter=8.1
+
+# --- Heat-set inserts -----------------------------------------------------------
+# The defaults are for CNC Kitchen M3 x 3.0 inserts. The depth is the depth of the hole,
+# which leaves room behind the insert for displaced plastic.
+heatinsert_diameter=4
+heatinsert_depth=4.5
+heatinsert_wall_thickness=1.6

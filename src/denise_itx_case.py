@@ -9,6 +9,7 @@ portene bak og Zorro-slottene nederst.
 
 Run:  python src/denise_itx_case.py [output_dir]
       Writes one STEP file per part plus the assembly. output_dir defaults to out/ in the repository root.
+      Options are read from config.txt in the repository root, or from the file given with --config <file>.
 Alle maal i mm. Maal merket ESTIMAT maa kontrolleres med skyvelaer.
 """
 import os
@@ -16,14 +17,95 @@ import sys
 import cadquery as cq
 from cadquery import Vector as V
 
+# ---------------------------------------------------------------- configuration
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repository root, the parent of src/
+
+# key: default. The type of the default decides how the value in config.txt is parsed.
+CONFIG_DEFAULTS = {
+    "rook_height": 227.0,
+    "rook_depth": 210.0,
+    "rook_width": 117.0,
+    "rook_corner_radius": 4.0,
+    "rook_foot_grill_height": 3.0,
+    "rook_foot_grill_gap": 2.5,
+    "rook_foot_grills": 3,
+    "chamfer_recess_enable": True,
+    "deco_groove_enable": True,
+    "pc_badge_recess_enable": True,
+    "led_window_width": 2.2,
+    "led_window_length": 5.0,
+    "floppy_legacy_enable": True,
+    "floppy_mount_hole_height": 5.0,
+    "zorro_cutout_enable": True,
+    "back_port_vga_enable": True,
+    "back_port_dc_enable": True,
+    "back_port_dc_diameter": 8.1,
+    "heatinsert_diameter": 4.0,
+    "heatinsert_depth": 4.5,
+    "heatinsert_wall_thickness": 1.6,
+}
+
+
+def config_error(msg):
+    sys.exit(f"config error: {msg}")
+
+
+def load_config():
+    """Read key=value lines from config.txt. Missing keys keep their defaults, unknown keys are errors."""
+    path = os.path.join(ROOT, "config.txt")
+    explicit = "--config" in sys.argv
+    if explicit:
+        i = sys.argv.index("--config")
+        if i + 1 >= len(sys.argv):
+            config_error("--config needs a file name")
+        path = sys.argv[i + 1]
+        del sys.argv[i:i + 2]
+    cfg = dict(CONFIG_DEFAULTS)
+    if not os.path.exists(path):
+        if explicit:
+            config_error(f"{path} not found")
+        return cfg
+    with open(path, encoding="utf-8") as f:
+        for no, line in enumerate(f, 1):
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            if "=" not in line:
+                config_error(f"{path} line {no}: expected key=value")
+            key, val = (t.strip() for t in line.split("=", 1))
+            if key not in CONFIG_DEFAULTS:
+                config_error(f"{path} line {no}: unknown key '{key}'")
+            if val == "":
+                continue                      # empty value keeps the default
+            default = CONFIG_DEFAULTS[key]
+            try:
+                if isinstance(default, bool):
+                    if val.lower() not in ("true", "false"):
+                        raise ValueError
+                    cfg[key] = val.lower() == "true"
+                elif isinstance(default, int):
+                    cfg[key] = int(val)
+                else:
+                    cfg[key] = float(val.replace(",", "."))
+            except ValueError:
+                kind = "true or false" if isinstance(default, bool) else "a number"
+                config_error(f"{path} line {no}: {key} must be {kind}, got '{val}'")
+    return cfg
+
+
+CFG = load_config()
+FLOPPY = CFG["floppy_legacy_enable"]
+ZORRO = CFG["zorro_cutout_enable"]
+
 # ---------------------------------------------------------------- parametre
-W = 117.0           # utvendig bredde
-D = 210.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = 227.0          # hoyde kabinettkropp uten fot
-R = 4.0             # hjorneradius sett forfra
+W = CFG["rook_width"]           # utvendig bredde
+D = CFG["rook_depth"]           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
+HB = CFG["rook_height"]         # hoyde kabinettkropp uten fot
+R = CFG["rook_corner_radius"]   # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
 T_REAR = 3.0        # bakpanel
-FOOT_H = 14.0       # fot
+FOOT_FIN_T, FOOT_FIN_GAP, FOOT_FINS = CFG["rook_foot_grill_height"], CFG["rook_foot_grill_gap"], CFG["rook_foot_grills"]
+FOOT_H = FOOT_FINS * FOOT_FIN_T + (FOOT_FINS - 1) * FOOT_FIN_GAP      # fot, 14,0 med standardverdiene
 FOOT_INSET = 4.0
 
 # front (Amiga 3000 rotert 90 grader)
@@ -77,7 +159,7 @@ RIB_FRONT_BOTTOM_X1 = MX_X - MX_BODY / 2 - 2.0 # nedre fremre ribbe stopper her 
 SD_Z0, SD_Z1 = T + 35.0, T + 115.0
 SD_DEPTH = 26.0     # fra forkant hovedkort og innover
 SD_OFFSET = 15.0    # fra undersiden av hovedkortet og ut mot venstre
-LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
+LED_W, LED_L = CFG["led_window_width"], CFG["led_window_length"]    # LED-vinduer i sporet
 
 # hovedkort (Mini-ITX 170 x 170)
 PCB = 170.0
@@ -94,11 +176,11 @@ IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (s
 # Zorro-kort: to slotter, kortplan lest av kortbildet ESTIMAT
 ZORRO_U = [5.2, 5.2 + 15.24]       # kortplan fra hovedkortets nedre kant
 ZORRO_OPEN_W = 11.0
-ZORRO_X0, ZORRO_X1 = 31.0, 91.0    # aapningens utstrekning. Naermere hovedkortet enn 91 er det I/O-utsnitt
+ZORRO_X0, ZORRO_X1 = W - 86.0, W - 26.0   # aapningens utstrekning, maalt fra hoyre side siden kortene henger paa hovedkortet. 31 og 91 ved bredde 117
 # Leppe og blindlokk etter monsteret til et standard PCI-blindlokk (PCI+cover.3mf), smalnet og kortet ned:
 # plate mot innsiden av bakpanelet, flik boyd innover i enden lengst fra hovedkortet, skruehull 6,45 over platens
 # underside og 1,5 til siden for midten i originalen. Skruen gaar i kortets innskyvingsretning.
-LIP_X0, LIP_X1 = 22.9, 29.4        # leppa i X
+LIP_X0, LIP_X1 = W - 94.1, W - 87.6   # leppa i X. 22,9 og 29,4 ved bredde 117
 LIP_D = 10.2                       # hvor langt leppa staar inn fra bakpanelet
 LIP_Z = (-2.25, 6.25)              # leppa i Z relativt til kortplanet. Resten av bredden er hals paa lokket
 LIP_HOLE_IN = 6.45                 # innsatshull fra bakpanelets innside (som paa standardlokket)
@@ -107,7 +189,7 @@ COVER_W = 12.5
 COVER_T = 1.5
 COVER_TAB_H = 13.5
 # DC og VGA ligger over Zorro-aapningene, saa det er fritt aa komme til skruene i leppene fra venstre
-DC_X, DC_Z, DC_D = 14.0, 52.0, 8.1   # hals maalt til 7,75
+DC_X, DC_Z, DC_D = 14.0, 52.0, CFG["back_port_dc_diameter"]   # hals maalt til 7,75
 DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # fordypning paa innsiden og gods som staar igjen. Hals 4,5 lang, mutter 1,88 tykk
 VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, 1.5   # fordypning for panelkontaktens hus, og gods som staar igjen
 VGA_X, VGA_Z = 44.0, 52.0          # DE-15 liggende. Aapning 18 x 10, skruehull 25 fra hverandre ESTIMAT
@@ -124,13 +206,16 @@ PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
 DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
 
 # skruer M3. Messing varmeinnsatser M3 (blindhull): hull 4,0 i diameter, 4 dypt, minst 1,6 gods rundt
-INS_D = 4.0
-INS_DEPTH = 4.5     # 0,5 ekstra for plast som presses ned foran innsatsen
+INS_D = CFG["heatinsert_diameter"]
+INS_DEPTH = CFG["heatinsert_depth"]     # 0,5 ekstra for plast som presses ned foran innsatsen
+INS_WALL = CFG["heatinsert_wall_thickness"]
+INS_BOSS_R = max(4.0, INS_D / 2 + INS_WALL)    # radius of round bosses that hold an insert
 INS_EXT = 4.0       # smalere forlengelse bak innsatsen, saa skruen ikke bunner
 # floppyhylle paa venstre sidepanel
-# Noyaktige hull for drivens sidehull, maalt med skyvelaer (ikke proevd): 21, 81 og 111 fra drivens forkant. M3 x 0,5.
+# Noyaktige hull for drivens sidehull: 21, 81 og 111 fra drivens forkant. M3 x 0,5.
+# Verified with the test gauge against a Chinon FZ-354 without face plate: all three positions fit, hole height 5.0.
 FD_HOLES_Y = [21.0, 81.0, 111.0]
-FD_HOLE_UP = 5.75                 # hullsenter over drivens bunnplate. Maalt 5,75, usikkert mellom 5,5 og 6. Proeves med testbit
+FD_HOLE_UP = CFG["floppy_mount_hole_height"]   # hullsenter over drivens bunnplate. 5,0 for Chinon FZ-354
 FD_GAP = 0.3                      # luft mellom drivens forkant og baksiden av frontpanelet
 FD_REAR_HOLE = FD_HOLES_Y[-1]
 SHELF_T = 4.0
@@ -153,10 +238,58 @@ Z_LEDS = [Z_GROOVE1 - LED_TOP_GAP - LED_L / 2 - i * LED_PITCH for i in range(2)]
 Z_SLOT1 = Z_LEDS[-1] - LED_L / 2 - 3.5      # diskaapning loftet opp under LED-ene
 ZC_SLOT = Z_SLOT1 - SLOT_L / 2
 
-RIB = 8.0
+RIB = max(8.0, INS_D + 2 * INS_WALL)
 RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
 RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB), (Y_TUBE1 - RIB, Y_TUBE1)]
 PANEL_SCREW_X = [25.0, W - 25.0]
+
+
+# ---------------------------------------------------------------- validation
+def validate_config():
+    """Stop on values the design cannot hold, warn on values that exceed the Bambu Lab H2D single nozzle volume."""
+    eps = 1e-6
+    # height: the mainboard must clear the upper rib, and the front must hold the LEDs and the floppy slot
+    h_min = BOARD_Z0 + PCB + RIB + T + 1.0
+    if FLOPPY:
+        h_min = max(h_min, BOT_M + TOP_M + 2 * STEEP + LED_TOP_GAP + LED_L + LED_PITCH + 3.5 + SLOT_L)
+    # depth: the front edge of the mainboard must sit behind the pins of the power and reset switches
+    d_min = Y_MX_END + 1.6 + PCB + IO_GAP + T_REAR
+    # width: front layout, rear panel cut-outs, Zorro card height, and floppy next to the PicoPSU
+    w_min = LEFT_M + 2 * CHAMFER_W + GROOVE + BTN_XC + BTN_W / 2 + BTN_EDGE + 2.0
+    w_min = max(w_min, 64.0 + 2.0 + 38.1 - 2.0 - IO_BELOW_PCB + T + STANDOFF)          # vents clear of the I/O cut-outs
+    if ZORRO:
+        w_min = max(w_min, T + 74.0 + 1.5 + PCB_T + STANDOFF + T)                       # 74 mm high Zorro card
+    if FLOPPY:
+        w_min = max(w_min, XC - FD_SLOT_FROM_TOP + FD_H + 4.0 + PICO_H + PCB_T + STANDOFF + T)
+    for key, val, low in (("rook_height", HB, h_min), ("rook_depth", D, d_min), ("rook_width", W, w_min)):
+        if val < low - eps:
+            config_error(f"{key}={val:g} is too small, the minimum with this configuration is {low:.1f}")
+    if not 0.5 <= R <= 6.0:
+        config_error(f"rook_corner_radius={R:g} must be between 0.5 and 6.0")
+    if FOOT_FINS < 1 or FOOT_FIN_T < 0.8 or FOOT_FIN_GAP < 0:
+        config_error("rook_foot_grills must be at least 1, rook_foot_grill_height at least 0.8 and rook_foot_grill_gap not negative")
+    if FOOT_H < INS_DEPTH + INS_EXT + 1.5 - eps:
+        config_error(f"the foot is {FOOT_H:g} high, it must be at least {INS_DEPTH + INS_EXT + 1.5:g} to hold the heat inserts")
+    if INS_D < 2.0 or INS_DEPTH < 2.0 or INS_WALL < 0.8:
+        config_error("heatinsert_diameter and heatinsert_depth must be at least 2.0 and heatinsert_wall_thickness at least 0.8")
+    if INS_DEPTH + 3.0 + 1.5 > T_FRONT + eps:
+        config_error(f"heatinsert_depth={INS_DEPTH:g} is too deep for the {T_FRONT:g} mm front panel")
+    if ZORRO and INS_D / 2 + INS_WALL > (LIP_Z[1] - LIP_Z[0]) / 2 + eps:
+        print(f"warning: the Zorro lips are too narrow for heatinsert_wall_thickness={INS_WALL:g}", file=sys.stderr)
+    if not (0.5 <= LED_W <= GROOVE - 2.0 and 0.5 <= LED_L <= LED_PITCH - 1.0):
+        config_error(f"led_window_width must be 0.5 to {GROOVE - 2.0:g} and led_window_length 0.5 to {LED_PITCH - 1.0:g}")
+    if FLOPPY and not 2.5 <= FD_HOLE_UP <= 12.0:
+        config_error(f"floppy_mount_hole_height={FD_HOLE_UP:g} must be between 2.5 and 12.0")
+    if not 3.0 <= DC_D <= 20.0:
+        config_error(f"back_port_dc_diameter={DC_D:g} must be between 3.0 and 20.0")
+    # Bambu Lab H2D, single nozzle: 325 x 320 x 325 mm. The U-bracket lies on its right wall.
+    a, b = sorted((HB, Y_TUBE1 - Y_TUBE0), reverse=True)
+    if a > 325.0 or b > 320.0 or W > 325.0:
+        print(f"warning: {W:g} x {D:g} x {HB:g} exceeds the Bambu Lab H2D single nozzle volume of 325 x 320 x 325 mm",
+              file=sys.stderr)
+
+
+validate_config()
 
 
 # ---------------------------------------------------------------- hjelpere
@@ -241,14 +374,16 @@ def ref_sd_zone():
 # ---------------------------------------------------------------- deler
 def front_panel():
     p = rounded(0, T_FRONT)
-    recess = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True)
-    p = p.cut(recess)
-    # diskaapning i sporet
-    p = p.cut(box(XC - SLOT_W / 2, XC + SLOT_W / 2, -1, T_FRONT + 1, ZC_SLOT - SLOT_L / 2, ZC_SLOT + SLOT_L / 2))
-    # eject paa hoyre chamfer, floppy staar med lokket mot venstre
-    ez = Z_SLOT1 - EJECT_FROM_TOP
-    ex = XC + EJECT_DX
-    p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
+    if CFG["chamfer_recess_enable"]:
+        recess = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True)
+        p = p.cut(recess)
+    if FLOPPY:
+        # diskaapning i sporet
+        p = p.cut(box(XC - SLOT_W / 2, XC + SLOT_W / 2, -1, T_FRONT + 1, ZC_SLOT - SLOT_L / 2, ZC_SLOT + SLOT_L / 2))
+        # eject paa hoyre chamfer, floppy staar med lokket mot venstre
+        ez = Z_SLOT1 - EJECT_FROM_TOP
+        ex = XC + EJECT_DX
+        p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
     # LED-vinduer i toppen av sporet
     for z in Z_LEDS:
         p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
@@ -269,13 +404,15 @@ def front_panel():
     (a0, a1), (b0, b1) = zlim(gx), zlim(gx + DECO_W)
     strip = (cq.Workplane("XZ").polyline([(gx, a0), (gx + DECO_W, b0), (gx + DECO_W, b1), (gx, a1)]).close()
              .extrude(-T_FRONT).translate((0, -1, 0)))
-    p = p.cut(cq.Workplane("XY").add(shifted).intersect(strip))
+    if CFG["chamfer_recess_enable"] and CFG["deco_groove_enable"]:
+        p = p.cut(cq.Workplane("XY").add(shifted).intersect(strip))
     # fordypning for pc-badge nede til venstre
     bs = BADGE + 2 * BADGE_MARGIN
     bx0 = W - BADGE_X - bs if BADGE_RIGHT else BADGE_X
     if BTN_LOW and BTN_RIGHT and BADGE_RIGHT:
         bx0 = px0 - BADGE_X - bs
-    p = p.cut(box(bx0, bx0 + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
+    if CFG["pc_badge_recess_enable"]:
+        p = p.cut(box(bx0, bx0 + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -316,7 +453,7 @@ def u_bracket():
     # avstandsstykker for hovedkortet
     for (uu, vv) in ITX_HOLES:
         y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
-        u = u.union(cyl((W - T - STANDOFF, y, z), (1, 0, 0), 4.0, STANDOFF + 0.5))
+        u = u.union(cyl((W - T - STANDOFF, y, z), (1, 0, 0), INS_BOSS_R, STANDOFF + 0.5))
         u = u.cut(insert_hole((W - T - STANDOFF, y, z), (1, 0, 0), ext=3.0))
     # luftinntak i bunn, over foten
     y = 30.0
@@ -329,7 +466,7 @@ def u_bracket():
     return u
 
 
-FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, 176.0), (W - 10.0, 176.0)]
+FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, D - 34.0), (W - 10.0, D - 34.0)]
 
 
 def side_panel():
@@ -340,6 +477,8 @@ def side_panel():
             s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # anleggspute mot ribbeenden
             s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
             s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
+    if not FLOPPY:
+        return s
     # hylle som floppyen hviler paa og skrus fast i, med avstivere under
     fb = ref_floppy().val().BoundingBox()
     zt = fb.zmin
@@ -381,19 +520,21 @@ def rear_panel():
         x, z = io_to_panel(sx, sy)
         p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
     # Zorro-aapninger med leppe og innsatshull paa innsiden
-    for zp in zorro_planes():
+    for zp in (zorro_planes() if ZORRO else []):
         h = ZORRO_OPEN_W / 2
         p = p.cut(box(ZORRO_X0, ZORRO_X1, y0, y1, zp - h, zp + h))
         p = p.union(box(LIP_X0, LIP_X1, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp + LIP_Z[0], zp + LIP_Z[1]))
         p = p.cut(insert_hole((LIP_X0, Y_TUBE1 - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), ext=1.0))
     # DC-inntak og VGA paa hoykant i venstre soyle
-    p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
-    p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_REC_D / 2, 1 + T_REAR - DC_REC_LEFT))
-    p = p.cut(box(VGA_X - VGA_REC_W / 2, VGA_X + VGA_REC_W / 2, y0, Y_TUBE1 + T_REAR - VGA_REC_LEFT,
-                  VGA_Z - VGA_REC_H / 2, VGA_Z + VGA_REC_H / 2))
-    p = p.cut(box(VGA_X - 9.0, VGA_X + 9.0, y0, y1, VGA_Z - 5.0, VGA_Z + 5.0).edges("|Y").fillet(2.0))
-    for dx in (-12.5, 12.5):
-        p = p.cut(cyl((VGA_X + dx, y0, VGA_Z), (0, 1, 0), 1.6, T_REAR + 2))
+    if CFG["back_port_dc_enable"]:
+        p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
+        p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), max(DC_REC_D, DC_D + 4.0) / 2, 1 + T_REAR - DC_REC_LEFT))
+    if CFG["back_port_vga_enable"]:
+        p = p.cut(box(VGA_X - VGA_REC_W / 2, VGA_X + VGA_REC_W / 2, y0, Y_TUBE1 + T_REAR - VGA_REC_LEFT,
+                      VGA_Z - VGA_REC_H / 2, VGA_Z + VGA_REC_H / 2))
+        p = p.cut(box(VGA_X - 9.0, VGA_X + 9.0, y0, y1, VGA_Z - 5.0, VGA_Z + 5.0).edges("|Y").fillet(2.0))
+        for dx in (-12.5, 12.5):
+            p = p.cut(cyl((VGA_X + dx, y0, VGA_Z), (0, 1, 0), 1.6, T_REAR + 2))
     # avtrekk oppe til venstre
     z = 125.0
     while z < HB - 16:
@@ -425,7 +566,7 @@ def zorro_cover(i):
 def foot():
     x0, x1, y0, y1 = FOOT_INSET, W - FOOT_INSET, FOOT_INSET, D
     rw = 6.0
-    fin_t, gap = 3.0, 2.5
+    fin_t, gap = FOOT_FIN_T, FOOT_FIN_GAP
     f = None
     z = -FOOT_H
     while z < -0.1:
@@ -443,7 +584,8 @@ def foot():
         for ya in (y0, y1 - rw):
             f = f.union(box(x, x + 4.0, ya + 1.5 if ya == y0 else ya, ya + rw if ya == y0 else ya + rw - 1.5, -FOOT_H, 0))
     for (x, y) in FOOT_SCREWS:
-        f = f.union(box(x - 5, x + 5, y - 5, y + 5, -FOOT_H, 0).intersect(box(x0 + 1.5, x1 - 1.5, y0, y1, -FOOT_H, 0)))
+        hb = max(5.0, INS_D / 2 + INS_WALL)
+        f = f.union(box(x - hb, x + hb, y - hb, y + hb, -FOOT_H, 0).intersect(box(x0 + 1.5, x1 - 1.5, y0, y1, -FOOT_H, 0)))
         f = f.cut(insert_hole((x, y, 0.0), (0, 0, -1)))
     return f
 
@@ -495,9 +637,11 @@ def floppy_testbit():
     return p
 
 
-PARTS = {
+PARTS = {} if not ZORRO else {
     "zorro_blindlokk_1": (lambda: zorro_cover(0), (0.6, 0.6, 0.6)),
     "zorro_blindlokk_2": (lambda: zorro_cover(1), (0.6, 0.6, 0.6)),
+}
+PARTS.update({
     "knapp_power": (lambda: button(0), (0.9, 0.88, 0.82)),
     "knapp_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
     "frontpanel": (front_panel, (0.85, 0.83, 0.78)),
@@ -505,7 +649,7 @@ PARTS = {
     "sidepanel_venstre": (side_panel, (0.75, 0.73, 0.68)),
     "bakpanel": (rear_panel, (0.45, 0.45, 0.45)),
     "fot": (foot, (0.45, 0.45, 0.45)),
-}
+})
 
 if __name__ == "__main__":
     # Output directory: first argument, else out/ in the repository root (the parent of src/)
@@ -519,7 +663,8 @@ if __name__ == "__main__":
     pcb, comp = ref_board()
     asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
     asm.add(comp, name="REF_komponentsone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
-    asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
+    if FLOPPY:
+        asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
     for i, m in enumerate(ref_mx()):
         asm.add(m, name=f"REF_mx{i+1}", color=cq.Color(0.2, 0.2, 0.2))
     asm.add(ref_sd_zone(), name="REF_sd_sone", color=cq.Color(0.2, 0.5, 0.9, 0.3))
@@ -527,6 +672,7 @@ if __name__ == "__main__":
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
     asm.save(os.path.join(out, "DeniseITX_kabinett_v0.21.step"))
-    tb = floppy_testbit()
-    cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
+    if FLOPPY:
+        tb = floppy_testbit()
+        cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     print("ok", out)

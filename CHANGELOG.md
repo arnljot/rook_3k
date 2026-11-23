@@ -4,6 +4,9 @@ All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are
 
 ## Unreleased
 
+- `config.txt` added and read by both scripts: case size with minimum checks, corner radius, foot grills, and switches for the chamfer recess, badge recess, legacy floppy, Zorro cut-outs, VGA and DC ports, plus LED window and heat-set insert dimensions.
+- Floppy mounting holes verified with the test gauge against a Chinon FZ-354 without face plate. Hole height corrected from 5.75 to 5.0 mm in the model. The files in `out/` are still the v0.21 exports and do not have this correction yet.
+- Zorro openings and lips are positioned from the right side, so they follow the mainboard when the width changes.
 - README has a printing section: designed for the Bambu Lab H2D, with part sizes and an assessment for 254 mm class printers.
 - STL exports removed; the model script no longer writes them.
 - Scripts moved to `src/`, with a README on how to run them. Both take an optional output directory.

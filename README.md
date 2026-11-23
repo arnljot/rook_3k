@@ -42,15 +42,18 @@ Printers with a bed shorter than 227 mm in both directions cannot print the main
 
 ## Hardware
 
-The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `src/denise_itx_case.py` can be changed to suit other inserts.
+The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The `heatinsert_` keys in `config.txt` can be changed to suit other inserts.
 
 The power and reset buttons are intended to press ordinary MX-style mechanical keyboard switches. The two switches snap into a plate in the U-bracket with 14 x 14 mm cut-outs, and the printed buttons sit on the switch stems. Keyboard switches are momentary. The switch dimensions in the model are taken from the common MX footprint and have not yet been checked against a fitted switch.
+
+The floppy mounting holes in the side panel shelf are verified with the printed test gauge against a Chinon FZ-354 without face plate. Other drives may have the holes at another height, which is set with `floppy_mount_hole_height` in `config.txt`.
 
 ## Contents
 
 - `src/denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
 - `src/make_3mf.py` writes a Bambu Studio project with one build plate per part. It needs a `bambu_template.3mf` saved from your own Bambu Studio.
-- [src/README.md](src/README.md) explains how to run the scripts and which arguments they take.
+- `config.txt` holds the options that can be changed without editing the model, such as the case size and whether there is a floppy drive.
+- [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
 - `DeniseITX_kabinettv0.21.3mf` is the Bambu Studio project for v0.21.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
