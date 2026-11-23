@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.19 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.20 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -102,8 +102,9 @@ LIP_HOLE_DZ = 2.0                  # innsatshull relativt til kortplanet
 COVER_W = 12.5
 COVER_T = 1.5
 COVER_TAB_H = 13.5
-DC_X, DC_Z, DC_D = 12.0, 19.0, 8.0
-VGA_X, VGA_Z = 13.5, 45.0          # DE-15 paa hoykant. Aapning 10 x 18, skruehull 25 fra hverandre ESTIMAT
+# DC og VGA ligger over Zorro-aapningene, saa det er fritt aa komme til skruene i leppene fra venstre
+DC_X, DC_Z, DC_D = 14.0, 52.0, 8.0
+VGA_X, VGA_Z = 44.0, 52.0          # DE-15 liggende. Aapning 18 x 10, skruehull 25 fra hverandre ESTIMAT
 IO_CLEAR = 0.2
 IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
 COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
@@ -381,9 +382,9 @@ def rear_panel():
         p = p.cut(insert_hole((LIP_X0, Y_TUBE1 - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), ext=1.0))
     # DC-inntak og VGA paa hoykant i venstre soyle
     p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
-    p = p.cut(box(VGA_X - 5.0, VGA_X + 5.0, y0, y1, VGA_Z - 9.0, VGA_Z + 9.0).edges("|Y").fillet(2.0))
-    for dz in (-12.5, 12.5):
-        p = p.cut(cyl((VGA_X, y0, VGA_Z + dz), (0, 1, 0), 1.6, T_REAR + 2))
+    p = p.cut(box(VGA_X - 9.0, VGA_X + 9.0, y0, y1, VGA_Z - 5.0, VGA_Z + 5.0).edges("|Y").fillet(2.0))
+    for dx in (-12.5, 12.5):
+        p = p.cut(cyl((VGA_X + dx, y0, VGA_Z), (0, 1, 0), 1.6, T_REAR + 2))
     # avtrekk oppe til venstre
     z = 125.0
     while z < HB - 16:
@@ -397,7 +398,7 @@ def rear_panel():
 
 def zorro_cover(i):
     """Blindlokk for Zorro-aapning i, etter monster av standard PCI-blindlokk.
-    Skrives ut flatt med utsiden ned. Legges rett paa plass og skrus i leppa med M3 x 6."""
+    Skrives ut med pluggen ned og stotter under hals og flik. Legges rett paa plass og skrus i leppa med M3 x 6."""
     zp = zorro_planes()[i]
     w = COVER_W / 2
     yi = Y_TUBE1                                   # bakpanelets innside
@@ -405,9 +406,9 @@ def zorro_cover(i):
     c = box(LIP_X1 + 0.3, ZORRO_X1 + 1.5, yi - COVER_T, yi, zp - w, zp + w)                       # plate over aapningen
     c = c.union(box(LIP_X0 - tt, LIP_X1 + 0.3, yi - COVER_T, yi, zp - w, zp + LIP_Z[0] - 0.5))   # hals forbi leppa
     c = c.union(box(LIP_X0 - tt, LIP_X0, yi - COVER_TAB_H, yi, zp - w, zp + w))                   # flik mot leppa
-    rim = box(ZORRO_X0, ZORRO_X1, yi - COVER_T - 1.2, yi - COVER_T, zp - 5.0, zp + 5.0)
-    rim = rim.cut(box(ZORRO_X0 + 1.5, ZORRO_X1 - 1.5, yi - COVER_T - 2, yi, zp - 3.5, zp + 3.5))
-    c = c.union(rim)                                                                              # avstivende ramme
+    # plugg som gaar inn i aapningen, saa lokket hviler i bakpanelet og ikke bare paa skruen
+    k = 0.25
+    c = c.union(box(ZORRO_X0 + k, ZORRO_X1 - k, yi - 0.1, yi + T_REAR - 0.4, zp - ZORRO_OPEN_W / 2 + k, zp + ZORRO_OPEN_W / 2 - k))
     c = c.cut(cyl((LIP_X0 - tt - 1, yi - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), CLEAR / 2, tt + 2))
     return c
 
@@ -516,7 +517,7 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.19.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.20.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)

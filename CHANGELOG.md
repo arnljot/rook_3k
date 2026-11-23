@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.20 - Connectors above the Zorro openings
+
+- VGA (now horizontal) and DC inlet moved above the Zorro openings to keep the lip screws accessible.
+- Blanking cover gets a plug that seats in the opening.
+
 ## v0.19 - Covers patterned on a PCI cover
 
 - Lip and blanking cover follow the layout of a standard PCI slot cover (tab, screw in the insertion direction, hole 6.45 mm inside the panel), narrowed and shortened for the DeniseITX slot pitch.
