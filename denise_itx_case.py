@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.4 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.5 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -41,8 +41,10 @@ LED_PITCH = 7.0
 BTN_POCKET_D = 3.0  # fordypning for power/reset i venstre kant
 BTN_W = 7.0         # knappene staar paa hoykant
 BTN_PWR_L, BTN_RST_L = 15.0, 10.0
-BTN_GAP, BTN_EDGE = 4.0, 2.5
-BTN_XC = 11.5       # knappenes senter fra venstre side, gir plass til 15,6 mm MX-bryter innenfor sidepanelet
+BTN_GAP, BTN_EDGE = 2.0, 2.5
+DECO_W, DECO_D = 1.8, 0.5       # pyntespor
+LOGO = 22.0                     # kvadratisk felt for logo mellom sporene i toppkanten
+BTN_XC = 7.5        # knappenes senter fra venstre side. MX-bryteren maa da staa ca 3,6 mm til hoyre for knappen
 BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
 BTN_CLEAR = 0.3
 LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
@@ -112,9 +114,9 @@ def rect_wire(y):
 
 
 def button_layout():
-    # venstre kant. Toppen av power paa linje med underkant av toppkanten, fordypningen aapen ut mot venstre side
-    z = Z_REC1
-    pz1 = z + BTN_EDGE
+    # venstre kant, fordypningen aapen ut mot venstre side
+    pz1 = Z_REC1                 # fordypningens overkant paa linje med underkant av toppkanten
+    z = pz1 - BTN_EDGE
     pz0 = z - BTN_PWR_L - BTN_GAP - BTN_RST_L - BTN_EDGE
     holes = []
     for l in (BTN_PWR_L, BTN_RST_L):
@@ -148,6 +150,15 @@ def front_panel():
     for (x0, x1, z0, z1) in holes:
         c = BTN_CLEAR
         p = p.cut(box(x0 - c, x1 + c, -1, T_FRONT + 1, z0 - c, z1 + c))
+    # pyntespor midt i venstre chamfer, 0,5 dypt vinkelrett paa flaten
+    import math
+    dy = DECO_D * math.hypot(REC, CHAMFER_W) / CHAMFER_W
+    gx = SIDE_M + CHAMFER_W / 2 - DECO_W / 2
+    shifted = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True).translate(V(0, dy, 0))
+    p = p.cut(cq.Workplane("XY").add(shifted).intersect(box(gx, gx + DECO_W, -1, T_FRONT, 0, HB)))
+    # to like spor i toppkanten som rammer inn logofeltet
+    for x in (SIDE_M, SIDE_M + DECO_W + LOGO):
+        p = p.cut(box(x, x + DECO_W, -1, DECO_D, Z_REC1, HB + 1))
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -305,5 +316,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.4.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.5.step"))
     print("ok", out)

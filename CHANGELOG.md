@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.5 - Front detailing
+
+- Button pocket aligned with the lower border of the top edge; gap between buttons halved; buttons moved 4 mm further left.
+- Decorative 1.8 x 0.5 mm groove in the left chamfer and two grooves on the top edge.
+
 ## v0.4 - Buttons on the left edge
 
 - Power and reset moved to the left edge, with the pocket open through the side of the front.
