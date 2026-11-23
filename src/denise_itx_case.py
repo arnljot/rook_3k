@@ -7,10 +7,12 @@ Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkrop
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
 portene bak og Zorro-slottene nederst.
 
-Kjor:  python denise_itx_case.py   (skriver STEP/STL til ./out)
+Run:  python src/denise_itx_case.py [output_dir]
+      Writes one STEP file per part plus the assembly. output_dir defaults to the repository root.
 Alle maal i mm. Maal merket ESTIMAT maa kontrolleres med skyvelaer.
 """
 import os
+import sys
 import cadquery as cq
 from cadquery import Vector as V
 
@@ -506,13 +508,13 @@ PARTS = {
 }
 
 if __name__ == "__main__":
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
+    # Output directory: first argument, else the repository root (the parent of src/)
+    out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     os.makedirs(out, exist_ok=True)
     asm = cq.Assembly(name="DeniseITX_kabinett")
     for name, (fn, col) in PARTS.items():
         s = fn()
         cq.exporters.export(s, os.path.join(out, f"{name}.step"))
-        cq.exporters.export(s, os.path.join(out, f"{name}.stl"), tolerance=0.05, angularTolerance=0.2)
         asm.add(s, name=name, color=cq.Color(*col))
     pcb, comp = ref_board()
     asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
@@ -527,5 +529,4 @@ if __name__ == "__main__":
     asm.save(os.path.join(out, "DeniseITX_kabinett_v0.21.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
-    cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)
     print("ok", out)

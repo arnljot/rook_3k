@@ -20,12 +20,13 @@ Work in progress. The parts are modelled but have not been test printed, and sev
 
 ## Hardware
 
-The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `denise_itx_case.py` can be changed to suit other inserts.
+The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `src/denise_itx_case.py` can be changed to suit other inserts.
 
 ## Contents
 
-- `denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
-- `make_3mf.py` writes a Bambu Studio project with one build plate per part. It needs a `bambu_template.3mf` saved from your own Bambu Studio.
+- `src/denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
+- `src/make_3mf.py` writes a Bambu Studio project with one build plate per part. It needs a `bambu_template.3mf` saved from your own Bambu Studio.
+- [src/README.md](src/README.md) explains how to run the scripts and which arguments they take.
 - `*.step` are the exported parts and the full assembly.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
 

@@ -3,14 +3,19 @@
 """Lager en Bambu Studio-prosjektfil (.3mf) med en byggeplate per del, ferdig orientert for utskrift.
 Bambu Studio laster bare plateinndelingen naar filen har prosjektinnstillinger, saa de hentes fra et
 prosjekt lagret i Bambu Studio (bambu_template.3mf).
-Bruk: python make_3mf.py v0.21 [bambu_template.3mf]"""
-import sys, zipfile, datetime, math
+Usage: python src/make_3mf.py <version> [template.3mf] [output_dir]
+  version      label used in the file name, e.g. v0.21
+  template.3mf project saved from Bambu Studio; default bambu_template.3mf in the repository root
+  output_dir   default: the repository root"""
+import os, sys, zipfile, datetime, math
 import numpy as np
 import cadquery as cq
 import denise_itx_case as d
 
 VER = sys.argv[1] if len(sys.argv) > 1 else "vX"
-TEMPLATE = sys.argv[2] if len(sys.argv) > 2 else "bambu_template.3mf"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repository root, the parent of src/
+TEMPLATE = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, "bambu_template.3mf")
+OUT_DIR = sys.argv[3] if len(sys.argv) > 3 else ROOT
 import json, re
 _t = zipfile.ZipFile(TEMPLATE)
 T_FILES = {n: _t.read(n) for n in ("Metadata/project_settings.config", "Metadata/slice_info.config", "Metadata/filament_sequence.json") if n in _t.namelist()}
@@ -120,7 +125,7 @@ rels = '''<?xml version="1.0" encoding="UTF-8"?>
  <Relationship Target="/3D/3dmodel.model" Id="rel-1" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>
 </Relationships>
 '''
-out = f"out/DeniseITX_kabinett{VER}.3mf"
+out = os.path.join(OUT_DIR, f"DeniseITX_kabinett_{VER}.3mf")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("[Content_Types].xml", ctypes)
     z.writestr("_rels/.rels", rels)
