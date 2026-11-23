@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.17 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.18 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -83,7 +83,18 @@ BOARD_Z0 = 15.0     # Zorro-kanten av kortet over kroppens bunn
 IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O-aapning
 IO_BELOW_PCB = 2.24                # aapningens kant under PCB-undersiden (ATX)
 IO_CENTER_U = 92.2                 # aapningens senter maalt fra Zorro-kanten ESTIMAT (tilpasset skjoldets hull mot kortbildet)
-IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # skjoldets flens
+IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # skjoldets flens (ikke lenger i bruk, skjoldet er bygd inn i bakpanelet)
+# Gjennomgaaende utsnitt etter DeniseITX I/O-skjoldets utforming, i skjoldets egne koordinater (0..162,75 x 0..48,45)
+IO_RECTS = [(16.1, 5.0, 151.25, 18.6), (16.1, 24.5, 100.75, 38.1)]          # (sx0, sy0, sx1, sy1)
+IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (sx, sy, diameter)
+# Zorro-kort: to slotter, kortplan lest av kortbildet ESTIMAT
+ZORRO_U = [5.2, 5.2 + 15.24]       # kortplan fra hovedkortets nedre kant
+ZORRO_OPEN_W = 11.0
+ZORRO_X0, ZORRO_X1 = 29.4, 91.0    # aapningens utstrekning. Naermere hovedkortet enn 91 er det I/O-utsnitt
+LIP_L, LIP_D = 6.5, 8.0            # leppe paa innsiden for aa skru fast brakett eller blindlokk
+COVER_T = 2.0
+DC_X, DC_Z, DC_D = 12.0, 19.0, 8.0
+VGA_X, VGA_Z = 13.5, 45.0          # DE-15 paa hoykant. Aapning 10 x 18, skruehull 25 fra hverandre ESTIMAT
 IO_CLEAR = 0.2
 IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
 COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
@@ -331,29 +342,62 @@ def side_panel():
     return s
 
 
+def io_to_panel(sx, sy):
+    """Skjoldkoordinat -> (x, z) i kabinettet."""
+    z = BOARD_Z0 + IO_CENTER_U - (sx - 81.375)
+    x = (W - T - STANDOFF) - (sy - 2.0 - IO_BELOW_PCB)
+    return x, z
+
+
+def zorro_planes():
+    return [BOARD_Z0 + u for u in ZORRO_U]
+
+
 def rear_panel():
     p = rounded(Y_TUBE1, D)
     y0, y1 = Y_TUBE1 - 1, D + 1
-    # standard ITX I/O-aapning for DeniseITX I/O-skjoldet (162,75 x 48,45, kant 158,5 x 44,5)
-    ax1 = W - T - STANDOFF + IO_BELOW_PCB           # 2,24 under PCB-undersiden
-    ax0 = ax1 - IO_AP_H
-    az0 = BOARD_Z0 + IO_CENTER_U - IO_AP_W / 2
-    az1 = az0 + IO_AP_W
-    c = IO_CLEAR
-    p = p.cut(box(ax0 - c, ax1 + c, y0, y1, az0 - c, az1 + c))
-    f = IO_FLANGE + c
-    p = p.cut(box(ax0 - f, ax1 + f, y0, Y_TUBE1 + IO_FLANGE_T, az0 - f, az1 + f))   # forsenkning for flensen paa innsiden
-    # DC-inntak for PicoPSU
-    p = p.cut(cyl((25.0, y0, 100.0), (0, 1, 0), 4.0, T_REAR + 2))
+    # I/O-utsnittene etter DeniseITX I/O-skjoldet rett i platen
+    for (sx0, sy0, sx1, sy1) in IO_RECTS:
+        xa, za = io_to_panel(sx0, sy0)
+        xb, zb = io_to_panel(sx1, sy1)
+        p = p.cut(box(min(xa, xb), max(xa, xb), y0, y1, min(za, zb), max(za, zb)))
+    for (sx, sy, dia) in IO_CIRCLES:
+        x, z = io_to_panel(sx, sy)
+        p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
+    # Zorro-aapninger med leppe og innsatshull paa innsiden
+    for zp in zorro_planes():
+        h = ZORRO_OPEN_W / 2
+        p = p.cut(box(ZORRO_X0, ZORRO_X1, y0, y1, zp - h, zp + h))
+        p = p.union(box(ZORRO_X0 - LIP_L, ZORRO_X0, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp - h, zp + h))
+        p = p.cut(insert_hole((ZORRO_X0 - LIP_L, Y_TUBE1 - LIP_D / 2, zp), (1, 0, 0), ext=1.0))
+    # DC-inntak og VGA paa hoykant i venstre soyle
+    p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
+    p = p.cut(box(VGA_X - 5.0, VGA_X + 5.0, y0, y1, VGA_Z - 9.0, VGA_Z + 9.0).edges("|Y").fillet(2.0))
+    for dz in (-12.5, 12.5):
+        p = p.cut(cyl((VGA_X, y0, VGA_Z + dz), (0, 1, 0), 1.6, T_REAR + 2))
     # avtrekk oppe til venstre
     z = 125.0
     while z < HB - 16:
-        p = p.cut(box(10, ax0 - 8, y0, y1, z, z + 3.0))
+        p = p.cut(box(10, 64, y0, y1, z, z + 3.0))
         z += 7.0
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
             p = p.cut(cyl((x, y0, (z0 + z1) / 2), (0, 1, 0), CLEAR / 2, T_REAR + 2))
     return p
+
+
+def zorro_cover(i):
+    """Blindlokk for Zorro-aapning i. Flik mot leppa, plate paa leppas innerkant, plugg som fyller aapningen.
+    Skrives ut liggende paa siden. Settes inn fra venstre og skrus i leppa med M3 x 6."""
+    zp = zorro_planes()[i]
+    h = ZORRO_OPEN_W / 2
+    yp = Y_TUBE1 - LIP_D                       # leppas innerkant
+    xt = ZORRO_X0 - LIP_L                      # leppas venstre flate
+    c = box(xt - COVER_T, ZORRO_X1 + 1.5, yp - COVER_T, yp, zp - h, zp + h)                    # plate
+    c = c.union(box(xt - COVER_T, xt, yp - COVER_T, Y_TUBE1 - 0.5, zp - h, zp + h))            # flik
+    c = c.union(box(ZORRO_X0 + 0.3, ZORRO_X1 - 0.3, yp, D - 0.5, zp - h + 0.3, zp + h - 0.3))  # plugg
+    c = c.cut(cyl((xt - COVER_T - 1, Y_TUBE1 - LIP_D / 2, zp), (1, 0, 0), CLEAR / 2, COVER_T + 2))
+    return c
 
 
 def foot():
@@ -401,10 +445,12 @@ def ref_picopsu():
                BOARD_Z0 + 103.0, BOARD_Z0 + 103.0 + PICO_W)
 
 
-def ref_zorro(card_h=70.0):
+def ref_zorro():
+    # TandemIDE 129 x 74 i slot 1, nettverkskort 134 x 53 i slot 2. Plassert midt paa Zorro-kontakten (26..157 fra bakkant, ESTIMAT)
     cards = []
-    for u in (5.4, 20.4):               # slottposisjoner ESTIMAT fra kortbildet
-        cards.append(box(X_PCB - 5.0 - card_h, X_PCB - 5.0, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0 + u - 0.8, BOARD_Z0 + u + 0.8))
+    yc = Y_PCB_REAR - 91.5
+    for zp, (L, h) in zip(zorro_planes(), ((129.0, 74.0), (134.0, 53.0))):
+        cards.append(box(X_PCB - 1.5 - h, X_PCB - 1.5, yc - L / 2, yc + L / 2, zp - 0.8, zp + 0.8))
     return cards
 
 
@@ -428,6 +474,8 @@ def floppy_testbit():
 
 
 PARTS = {
+    "zorro_blindlokk_1": (lambda: zorro_cover(0), (0.6, 0.6, 0.6)),
+    "zorro_blindlokk_2": (lambda: zorro_cover(1), (0.6, 0.6, 0.6)),
     "knapp_power": (lambda: button(0), (0.9, 0.88, 0.82)),
     "knapp_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
     "frontpanel": (front_panel, (0.85, 0.83, 0.78)),
@@ -456,7 +504,7 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.17.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.18.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)

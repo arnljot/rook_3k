@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.18 - Rear panel rework
+
+- I/O cut-outs following the DeniseITX I/O shield layout built into the rear panel; the separate shield aperture is gone.
+- Two Zorro openings (15.24 mm pitch) with an inner lip and insert hole, and a blanking cover.
+- VGA (DE-15) and DC inlet cut-outs.
+
 ## v0.17 - Heat-set inserts
 
 - M3 brass heat-set insert holes (4.0 x 4.5 mm) for foot, front panel, rear panel, side panel and mainboard standoffs.
