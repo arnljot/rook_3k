@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.8 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.9 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -13,8 +13,8 @@ import cadquery as cq
 from cadquery import Vector as V
 
 # ---------------------------------------------------------------- parametre
-W = 95.0            # utvendig bredde
-D = 187.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
+W = 117.0           # utvendig bredde
+D = 195.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
 HB = 225.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
@@ -27,7 +27,10 @@ REC = 10.0          # dybde chamfer
 FLOOR = 2.5         # gods bak sporet
 T_FRONT = REC + FLOOR
 CHAMFER_W = 20.3    # bredde paa skraa flate fra hver side
-SIDE_M = (W - 14.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre
+SIDE_M = (W - 14.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre naar feltet er sentrert
+LEFT_M = 22.0       # flat kant til venstre for chamferfeltet. Sett lik TOP_M for felt trukket mot venstre
+BTN_RIGHT = True   # knapper i hoyre kant i stedet for venstre
+BADGE_RIGHT = True # badge nede til hoyre i stedet for venstre
 TOP_M = 22.0        # flat kant topp
 BOT_M = 45.0        # flat kant bunn
 GROOVE = 14.0       # flatt spor i bunn av chamfer
@@ -45,7 +48,8 @@ BTN_GAP, BTN_EDGE = 2.0, 2.5
 DECO_W, DECO_D = 1.8, 0.5       # pyntespor
 DECO_END = 1.0                  # sporet stopper saa langt fra chamferens topp- og bunnkant
 BADGE, BADGE_MARGIN, BADGE_D = 25.0, 1.0, 1.0   # fordypning for 25 x 25 pc-badge
-BADGE_X, BADGE_Z = 6.5, 6.5     # fra venstre side og fra underkant front
+BADGE_X, BADGE_Z = 6.5, 6.5     # fra siden (eller fra knappefordypningen) og fra underkant front
+BTN_LOW = True                  # knappefordypningen nede, underkant paa linje med badge-fordypningen
 BTN_XC = 7.5        # knappenes senter fra venstre side. MX-bryteren maa da staa ca 3,6 mm til hoyre for knappen
 BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
 BTN_CLEAR = 0.3
@@ -68,7 +72,8 @@ ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # 
 # floppy standard 3,5"
 FD_W, FD_H, FD_L = 101.6, 25.4, 146.0
 FD_SLOT_FROM_TOP = 9.0 + 3.3 / 2   # 9 mm fra lokket til disken (maalt), pluss halv disktykkelse
-PICO_H = 36.0            # PicoPSU over hovedkortet (maalt)
+PICO_H, PICO_T, PICO_W = 36.0, 23.0, 45.0   # PicoPSU over hovedkortet, tykkelse, bredde (maalt)
+PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
 DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
 
 # skruer M3
@@ -81,7 +86,8 @@ X_SPLIT = 4.0       # deling mellom venstre sidepanel og U-brakett
 X_PCB = W - T - STANDOFF - PCB_T      # komponentsiden av PCB
 Y_PCB_REAR = Y_TUBE1 - IO_GAP
 Y_PCB_FRONT = Y_PCB_REAR - PCB
-XC = W / 2
+RIGHT_M = W - LEFT_M - 2 * CHAMFER_W - 14.0
+XC = LEFT_M + CHAMFER_W + 7.0      # senter av sporet og diskaapningen
 Z_REC0, Z_REC1 = BOT_M, HB - TOP_M
 Z_GROOVE1 = Z_REC1 - STEEP
 Z_LEDS = [Z_GROOVE1 - LED_TOP_GAP - LED_L / 2 - i * LED_PITCH for i in range(2)]
@@ -91,7 +97,7 @@ ZC_SLOT = Z_SLOT1 - SLOT_L / 2
 RIB = 8.0
 RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
 RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB), (Y_TUBE1 - RIB, Y_TUBE1)]
-PANEL_SCREW_X = [25.0, 70.0]
+PANEL_SCREW_X = [25.0, W - 25.0]
 
 
 # ---------------------------------------------------------------- hjelpere
@@ -111,7 +117,7 @@ def rounded(y0, y1, inset=0.0, r=R):
 def rect_wire(y):
     t = y / REC
     side = CHAMFER_W * t
-    x0, x1 = SIDE_M + side, W - SIDE_M - side
+    x0, x1 = LEFT_M + side, W - RIGHT_M - side
     z0, z1 = Z_REC0 + STEEP * t, Z_REC1 - STEEP * t
     pts = [V(x0, y, z0), V(x1, y, z0), V(x1, y, z1), V(x0, y, z1), V(x0, y, z0)]
     return cq.Wire.makePolygon(pts)
@@ -119,14 +125,18 @@ def rect_wire(y):
 
 def button_layout():
     # venstre kant, fordypningen aapen ut mot venstre side
-    pz1 = Z_REC1                 # fordypningens overkant paa linje med underkant av toppkanten
+    ph = 2 * BTN_EDGE + BTN_PWR_L + BTN_GAP + BTN_RST_L
+    pz1 = BADGE_Z + ph if BTN_LOW else Z_REC1
+    pz0 = pz1 - ph
     z = pz1 - BTN_EDGE
-    pz0 = z - BTN_PWR_L - BTN_GAP - BTN_RST_L - BTN_EDGE
     holes = []
     for l in (BTN_PWR_L, BTN_RST_L):
-        holes.append((BTN_XC - BTN_W / 2, BTN_XC + BTN_W / 2, z - l, z))
+        xc = W - BTN_XC if BTN_RIGHT else BTN_XC
+        holes.append((xc - BTN_W / 2, xc + BTN_W / 2, z - l, z))
         z -= l + BTN_GAP
-    return (-1.0, BTN_XC + BTN_W / 2 + BTN_EDGE, pz0, pz1), holes
+    if BTN_RIGHT:
+        return (xc - BTN_W / 2 - BTN_EDGE, W + 1.0, pz0, pz1), holes
+    return (-1.0, xc + BTN_W / 2 + BTN_EDGE, pz0, pz1), holes
 
 
 def ref_buttons():
@@ -157,10 +167,10 @@ def front_panel():
     # pyntespor midt i venstre chamfer, 0,5 dypt vinkelrett paa flaten
     import math
     dy = DECO_D * math.hypot(REC, CHAMFER_W) / CHAMFER_W
-    gx = SIDE_M + CHAMFER_W / 2 - DECO_W / 2
+    gx = LEFT_M + CHAMFER_W / 2 - DECO_W / 2
     shifted = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True).translate(V(0, dy, 0))
     def zlim(x):
-        t = (x - SIDE_M) / CHAMFER_W
+        t = (x - LEFT_M) / CHAMFER_W
         return Z_REC0 + STEEP * t + DECO_END, Z_REC1 - STEEP * t - DECO_END
     (a0, a1), (b0, b1) = zlim(gx), zlim(gx + DECO_W)
     strip = (cq.Workplane("XZ").polyline([(gx, a0), (gx + DECO_W, b0), (gx + DECO_W, b1), (gx, a1)]).close()
@@ -168,7 +178,10 @@ def front_panel():
     p = p.cut(cq.Workplane("XY").add(shifted).intersect(strip))
     # fordypning for pc-badge nede til venstre
     bs = BADGE + 2 * BADGE_MARGIN
-    p = p.cut(box(BADGE_X, BADGE_X + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
+    bx0 = W - BADGE_X - bs if BADGE_RIGHT else BADGE_X
+    if BTN_LOW and BTN_RIGHT and BADGE_RIGHT:
+        bx0 = px0 - BADGE_X - bs
+    p = p.cut(box(bx0, bx0 + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -204,7 +217,7 @@ def u_bracket():
     # luftinntak i bunn, over foten
     y = 30.0
     while y < Y_TUBE1 - 20:
-        u = u.cut(box(16, 80, y, y + 4.0, -1, T + 1))
+        u = u.cut(box(16, W - 15, y, y + 4.0, -1, T + 1))
         y += 9.0
     # hull for fotskruer
     for (x, yy) in FOOT_SCREWS:
@@ -212,7 +225,7 @@ def u_bracket():
     return u
 
 
-FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, 168.0), (W - 10.0, 168.0)]
+FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, 176.0), (W - 10.0, 176.0)]
 
 
 def side_panel():
@@ -242,7 +255,7 @@ def rear_panel():
     # avtrekk oppe til venstre
     z = 125.0
     while z < HB - 16:
-        p = p.cut(box(10, 37, y0, y1, z, z + 3.0))
+        p = p.cut(box(10, ax0 - 8, y0, y1, z, z + 3.0))
         z += 7.0
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -289,8 +302,10 @@ def ref_floppy():
 
 
 def ref_picopsu():
-    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet. Posisjon og tykkelse (20) er anslag.
-    return box(X_PCB - PICO_H, X_PCB, Y_PCB_REAR - 172.0 + 2.0, Y_PCB_REAR - 150.0, BOARD_Z0 + 103.0, BOARD_Z0 + 153.0)
+    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet.
+    # PicoPSU maalt: 36 over kortet, 23 tykk, 45 bred, henger ca 2,5 ut over forkanten av kortet.
+    return box(X_PCB - PICO_H, X_PCB, Y_PCB_FRONT - PICO_OVERHANG, Y_PCB_FRONT - PICO_OVERHANG + PICO_T,
+               BOARD_Z0 + 103.0, BOARD_Z0 + 103.0 + PICO_W)
 
 
 def ref_zorro(card_h=70.0):
@@ -326,5 +341,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.8.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.9.step"))
     print("ok", out)

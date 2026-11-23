@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.9 - Wider case, recess shifted left
+
+- Width increased to 117 mm; the chamfer field keeps its own symmetry but moves left so the floppy clears the PicoPSU.
+- Left edge equals the top edge (22 mm). Buttons and badge recess moved to the lower right.
+- Depth increased to 195 mm to make room for the PicoPSU in front of the mainboard.
+
 ## v0.8 - Measured component data
 
 - Floppy raised to clear the disk-on-module on the accelerator card; body height 225 mm.
