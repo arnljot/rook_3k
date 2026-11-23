@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.16 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.17 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -96,7 +96,10 @@ PICO_H, PICO_T, PICO_W = 36.0, 23.0, 45.0   # PicoPSU over hovedkortet, tykkelse
 PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
 DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
 
-# skruer M3
+# skruer M3. Messing varmeinnsatser M3 (blindhull): hull 4,0 i diameter, 4 dypt, minst 1,6 gods rundt
+INS_D = 4.0
+INS_DEPTH = 4.5     # 0,5 ekstra for plast som presses ned foran innsatsen
+INS_EXT = 4.0       # smalere forlengelse bak innsatsen, saa skruen ikke bunner
 # floppyhylle paa venstre sidepanel
 # Noyaktige hull for drivens sidehull, maalt med skyvelaer (ikke proevd): 21, 81 og 111 fra drivens forkant. M3 x 0,5.
 FD_HOLES_Y = [21.0, 81.0, 111.0]
@@ -130,6 +133,13 @@ PANEL_SCREW_X = [25.0, W - 25.0]
 
 
 # ---------------------------------------------------------------- hjelpere
+def insert_hole(p, d, ext=INS_EXT):
+    """Hull for M3 varmeinnsats fra flaten i punkt p, innover i retning d."""
+    p0 = [p[i] - 0.5 * d[i] for i in range(3)]
+    h = cq.Solid.makeCylinder(INS_D / 2, INS_DEPTH + 0.5, V(*p0), V(*d))
+    return h.fuse(cq.Solid.makeCylinder(1.6, INS_DEPTH + 0.5 + ext, V(*p0), V(*d)))
+
+
 def box(x0, x1, y0, y1, z0, z1):
     return cq.Workplane("XY").box(x1 - x0, y1 - y0, z1 - z0, centered=False).translate((x0, y0, z0))
 
@@ -242,7 +252,7 @@ def front_panel():
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
-            p = p.cut(cyl((x, T_FRONT - 8.0, (z0 + z1) / 2), (0, 1, 0), PILOT / 2, 9.0))
+            p = p.cut(insert_hole((x, T_FRONT, (z0 + z1) / 2), (0, -1, 0), ext=3.0))
     return p
 
 
@@ -261,12 +271,12 @@ def u_bracket():
         for (z0, z1) in RIB_Z:
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
             # sidepanelskrue inn i ribbeenden
-            u = u.cut(cyl((X_SPLIT - 1, yc, zc), (1, 0, 0), PILOT / 2, 13.0))
+            u = u.cut(insert_hole((X_SPLIT, yc, zc), (1, 0, 0)))
             for x in PANEL_SCREW_X:
                 if iy == 0:   # front: skrue innenfra gjennom ribben
                     u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB + 2))
-                else:         # bak: pilothull for skrue utenfra
-                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), PILOT / 2, RIB + 2))
+                else:         # bak: varmeinnsats for skrue utenfra gjennom bakpanelet
+                    u = u.cut(insert_hole((x, y1, zc), (0, -1, 0), ext=3.0))
     # brakettplate for de to MX-bryterne, med avstivning langs overkanten
     h = MX_BODY / 2
     px0, pz1 = MX_X - h - 3.0, MX_Z[0] + h + 2.5
@@ -280,7 +290,7 @@ def u_bracket():
     for (uu, vv) in ITX_HOLES:
         y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
         u = u.union(cyl((W - T - STANDOFF, y, z), (1, 0, 0), 4.0, STANDOFF + 0.5))
-        u = u.cut(cyl((W - T - STANDOFF - 1, y, z), (1, 0, 0), PILOT / 2, STANDOFF + 2.5))
+        u = u.cut(insert_hole((W - T - STANDOFF, y, z), (1, 0, 0), ext=3.0))
     # luftinntak i bunn, over foten
     y = 30.0
     while y < Y_TUBE1 - 20:
@@ -300,6 +310,7 @@ def side_panel():
     for (y0, y1) in RIB_Y:
         for (z0, z1) in RIB_Z:
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
+            s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # anleggspute mot ribbeenden
             s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
             s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
     # hylle som floppyen hviler paa og skrus fast i, med avstivere under
@@ -367,7 +378,7 @@ def foot():
             f = f.union(box(x, x + 4.0, ya + 1.5 if ya == y0 else ya, ya + rw if ya == y0 else ya + rw - 1.5, -FOOT_H, 0))
     for (x, y) in FOOT_SCREWS:
         f = f.union(box(x - 5, x + 5, y - 5, y + 5, -FOOT_H, 0).intersect(box(x0 + 1.5, x1 - 1.5, y0, y1, -FOOT_H, 0)))
-        f = f.cut(cyl((x, y, -10.0), (0, 0, 1), PILOT / 2, 11.0))
+        f = f.cut(insert_hole((x, y, 0.0), (0, 0, -1)))
     return f
 
 
@@ -445,7 +456,7 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.16.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.17.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)

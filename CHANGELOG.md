@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.17 - Heat-set inserts
+
+- M3 brass heat-set insert holes (4.0 x 4.5 mm) for foot, front panel, rear panel, side panel and mainboard standoffs.
+- Contact pads on the side panel at the four screws.
+
 ## v0.16 - Test gauge and STL export
 
 - Small printable gauge to verify floppy hole positions and hole height (5.0, 5.5 and 6.0 mm) before printing the side panel.
