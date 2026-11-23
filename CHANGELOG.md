@@ -1,9 +1,11 @@
 # Changelog
 
-All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
+All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
 ## Unreleased
 
+- The project is named Rook 3K. File names keep the `DeniseITX_` prefix for now.
+- Source location set to https://github.com/arnljot/rook_3k.
 - Licensed under CERN-OHL-S-2.0. Copyright and licence notices added to README and scripts.
 
 ## v0.21 - Connector recesses and 3MF export

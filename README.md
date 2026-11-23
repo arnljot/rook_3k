@@ -1,8 +1,8 @@
-# DeniseITX case
+# Rook 3K
 
-A 3D-printable case for the Amiga DeniseITX mainboard.
+A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
-The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000.
+The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000. The name follows from that: the rook is the tower among the chess pieces, and 3K is 3000.
 
 A small volume has been desirable but never an absolute goal. Aesthetics and the creator's own configuration and preferences have guided the design.
 
@@ -28,6 +28,6 @@ This source describes Open Hardware and is licensed under the CERN-OHL-S v2. You
 
 This source is distributed WITHOUT ANY EXPRESS OR IMPLIED WARRANTY, INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A PARTICULAR PURPOSE. Please see the CERN-OHL-S v2 for applicable conditions.
 
-Source location: to be added when the repository is published.
+Source location: https://github.com/arnljot/rook_3k
 
 As per CERN-OHL-S v2 section 4, should you produce hardware based on this source, you must where practicable maintain the source location visible on the product or in its documentation.
