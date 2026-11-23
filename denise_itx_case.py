@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.10 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.11 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -14,7 +14,7 @@ from cadquery import Vector as V
 
 # ---------------------------------------------------------------- parametre
 W = 117.0           # utvendig bredde
-D = 195.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
+D = 210.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
 HB = 225.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
@@ -53,6 +53,26 @@ BTN_LOW = True                  # knappefordypningen nede, underkant paa linje m
 BTN_XC = 7.5        # knappenes senter fra venstre side. MX-bryteren maa da staa ca 3,6 mm til hoyre for knappen
 BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
 BTN_CLEAR = 0.3
+# MX-brytere bak knappene. Maal etter hukommelsen fra Cherry MX-databladet, kontroller mot faktisk bryter
+MX_BODY = 15.6      # hus, kvadratisk
+MX_CUT = 14.0       # utsnitt i brakettplate
+MX_PLATE_T = 1.5
+MX_STEM = 3.6       # stamme over hustopp
+MX_TOP = 6.6        # hustopp til overside plate
+MX_BELOW = 5.0      # overside plate til bunn av hus
+MX_PINS = 3.3
+MX_X = W - T - 0.7 - MX_BODY / 2      # brytersenter, saa langt mot hoyre vegg som mulig
+MX_Z = [27.5, 11.5]                   # power, reset. 16 mm senteravstand
+FOOT_T = 3.0        # knappens fot bak fronten
+BOSS_L = 4.0        # tapp med kryssfeste for bryterstammen
+Y_MX_TOP = T_FRONT + FOOT_T + BOSS_L           # hustopp
+Y_MX_PLATE = Y_MX_TOP + MX_TOP                 # forside brakettplate
+Y_MX_END = Y_MX_PLATE + MX_BELOW + MX_PINS     # pinnespisser
+RIB_FRONT_BOTTOM_X1 = MX_X - MX_BODY / 2 - 2.0 # nedre fremre ribbe stopper her for aa gi plass til bryterne
+# reservert sone for fremtidig SD-kortaapning i hoyre kant (ikke tegnet, bare holdt fri)
+SD_Z0, SD_Z1 = T + 35.0, T + 115.0
+SD_DEPTH = 26.0     # fra forkant hovedkort og innover
+SD_OFFSET = 15.0    # fra undersiden av hovedkortet og ut mot venstre
 LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
 
 # hovedkort (Mini-ITX 170 x 170)
@@ -139,9 +159,37 @@ def button_layout():
     return (-1.0, xc + BTN_W / 2 + BTN_EDGE, pz0, pz1), holes
 
 
+def button(i):
+    # knapp med fot og tapp for MX-stamme. Skrives ut staaende paa foten.
+    (x0, x1, z0, z1) = button_layout()[1][i]
+    b = box(x0, x1, -BTN_OUT, T_FRONT, z0, z1)
+    lz0 = 1.3 if i == 1 else 0.8
+    lz1 = 0.8 if i == 1 else 1.3
+    fx0 = min(x0 - 1.3, MX_X - 4.0)
+    b = b.union(box(fx0, min(x1 + 1.3, W - T - 0.4), T_FRONT, T_FRONT + FOOT_T, z0 - lz0, z1 + lz1))
+    b = b.union(cyl((MX_X, T_FRONT + FOOT_T, MX_Z[i]), (0, 1, 0), 2.9, BOSS_L))
+    ye = Y_MX_TOP
+    for (dx, dz) in ((2.1, 0.7), (0.7, 2.1)):
+        b = b.cut(box(MX_X - dx, MX_X + dx, ye - MX_STEM - 0.1, ye + 1, MX_Z[i] - dz, MX_Z[i] + dz))
+    return b
+
+
 def ref_buttons():
-    # knappetopper i hvileposisjon, kun for visning
-    return [box(x0, x1, -BTN_OUT, BTN_POCKET_D + 2, z0, z1) for (x0, x1, z0, z1) in button_layout()[1]]
+    return [button(0), button(1)]
+
+
+def ref_mx():
+    out = []
+    for z in MX_Z:
+        h = MX_BODY / 2
+        out.append(box(MX_X - h, MX_X + h, Y_MX_TOP, Y_MX_PLATE + MX_BELOW, z - h, z + h)
+                   .union(box(MX_X - 3, MX_X + 3, Y_MX_PLATE + MX_BELOW, Y_MX_END, z - 3, z + 3)))
+    return out
+
+
+def ref_sd_zone():
+    x1 = X_PCB + PCB_T - SD_OFFSET
+    return box(W - RIGHT_M + 3.0, x1, T_FRONT, Y_PCB_FRONT + SD_DEPTH, SD_Z0, SD_Z1)
 
 
 # ---------------------------------------------------------------- deler
@@ -198,7 +246,8 @@ def u_bracket():
     # ribber i topp og bunn, foran og bak: feste for front, bakpanel og sidepanel
     for (y0, y1) in RIB_Y:
         for (z0, z1) in RIB_Z:
-            u = u.union(box(X_SPLIT, W - T, y0, y1, z0, z1))
+            x1 = RIB_FRONT_BOTTOM_X1 if (y0 == Y_TUBE0 and z0 == T) else W - T
+            u = u.union(box(X_SPLIT, x1, y0, y1, z0, z1))
     for iy, (y0, y1) in enumerate(RIB_Y):
         for (z0, z1) in RIB_Z:
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
@@ -209,6 +258,15 @@ def u_bracket():
                     u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB + 2))
                 else:         # bak: pilothull for skrue utenfra
                     u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), PILOT / 2, RIB + 2))
+    # brakettplate for de to MX-bryterne, med avstivning langs overkanten
+    h = MX_BODY / 2
+    px0, pz1 = MX_X - h - 3.0, MX_Z[0] + h + 2.5
+    plate = box(px0, W - T, Y_MX_PLATE, Y_MX_PLATE + MX_PLATE_T, T, pz1)
+    plate = plate.union(box(px0, W - T, Y_MX_PLATE - 5.0, Y_MX_PLATE + MX_PLATE_T, pz1 - 1.5, pz1))
+    for z in MX_Z:
+        c = MX_CUT / 2
+        plate = plate.cut(box(MX_X - c, MX_X + c, Y_MX_PLATE - 1, Y_MX_PLATE + MX_PLATE_T + 1, z - c, z + c))
+    u = u.union(plate)
     # avstandsstykker for hovedkortet
     for (uu, vv) in ITX_HOLES:
         y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
@@ -316,6 +374,8 @@ def ref_zorro(card_h=70.0):
 
 
 PARTS = {
+    "knapp_power": (lambda: button(0), (0.9, 0.88, 0.82)),
+    "knapp_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
     "frontpanel": (front_panel, (0.85, 0.83, 0.78)),
     "u_brakett": (u_bracket, (0.75, 0.73, 0.68)),
     "sidepanel_venstre": (side_panel, (0.75, 0.73, 0.68)),
@@ -336,10 +396,11 @@ if __name__ == "__main__":
     asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
     asm.add(comp, name="REF_komponentsone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
     asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
-    for i, b in enumerate(ref_buttons()):
-        asm.add(b, name=f"REF_knapp{i+1}", color=cq.Color(0.9, 0.88, 0.82))
+    for i, m in enumerate(ref_mx()):
+        asm.add(m, name=f"REF_mx{i+1}", color=cq.Color(0.2, 0.2, 0.2))
+    asm.add(ref_sd_zone(), name="REF_sd_sone", color=cq.Color(0.2, 0.5, 0.9, 0.3))
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.10.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.11.step"))
     print("ok", out)

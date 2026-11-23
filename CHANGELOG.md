@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.11 - Switches behind the buttons
+
+- Button plungers with a foot and a cross socket for MX-style key switches; switch plate integrated in the U-bracket.
+- Depth increased to 210 mm so the switches fit between front panel and mainboard.
+- Keep-out zone reserved behind the right front edge for a future SD card opening.
+
 ## v0.10 - Smaller buttons
 
 - Buttons reduced to 7 x 12 and 7 x 8 mm so the button pocket matches the badge recess height.
