@@ -1,0 +1,265 @@
+"""
+Denise ITX staaende kabinett, konsept v0.1 (CadQuery).
+
+Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
+Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
+portene bak og Zorro-slottene nederst.
+
+Kjor:  python denise_itx_case.py   (skriver STEP/STL til ./out)
+Alle maal i mm. Maal merket ESTIMAT maa kontrolleres med skyvelaer.
+"""
+import os
+import cadquery as cq
+from cadquery import Vector as V
+
+# ---------------------------------------------------------------- parametre
+W = 95.0            # utvendig bredde
+D = 187.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
+HB = 212.0          # hoyde kabinettkropp uten fot
+R = 4.0             # hjorneradius sett forfra
+T = 3.0             # veggtykkelse
+T_REAR = 3.0        # bakpanel
+FOOT_H = 14.0       # fot
+FOOT_INSET = 4.0
+
+# front (Amiga 3000 rotert 90 grader)
+REC = 10.0          # dybde chamfer
+FLOOR = 2.5         # gods bak sporet
+T_FRONT = REC + FLOOR
+SIDE_M = 12.5       # flat kant venstre/hoyre for chamfer starter
+TOP_M = 22.0        # flat kant topp
+BOT_M = 45.0        # flat kant bunn
+GROOVE = 8.0        # flatt spor i bunn av chamfer
+STEEP = 4.0         # bredde paa bratt chamfer topp/bunn
+SLOT_L, SLOT_W = 100.0, 8.0          # diskaapning
+EJECT_L, EJECT_W = 21.0, 5.0         # eject-knapp ESTIMAT plassering
+EJECT_DX = -11.0    # eject senter i X relativt til sporets senter ESTIMAT
+EJECT_FROM_BOTTOM = 16.5             # eject senter over nedre ende av diskaapning ESTIMAT
+BTN_D = 5.5         # power/reset knappehull i sporet (forslag)
+LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
+
+# hovedkort (Mini-ITX 170 x 170)
+PCB = 170.0
+PCB_T = 1.6
+STANDOFF = 6.0
+BOARD_Z0 = 15.0     # Zorro-kanten av kortet over kroppens bunn
+IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
+COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
+ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u fra Zorro-kant, v fra bakkant)
+
+# floppy standard 3,5"
+FD_W, FD_H, FD_L = 101.6, 25.4, 146.0
+FD_SLOT_FROM_TOP = 8.5   # diskaapningens senter under lokket ESTIMAT
+
+# skruer M3
+PILOT = 2.6
+CLEAR = 3.4
+
+Y_TUBE0 = T_FRONT
+Y_TUBE1 = D - T_REAR
+X_SPLIT = 4.0       # deling mellom venstre sidepanel og U-brakett
+X_PCB = W - T - STANDOFF - PCB_T      # komponentsiden av PCB
+Y_PCB_REAR = Y_TUBE1 - IO_GAP
+Y_PCB_FRONT = Y_PCB_REAR - PCB
+XC = W / 2
+Z_REC0, Z_REC1 = BOT_M, HB - TOP_M
+ZC_SLOT = (Z_REC0 + Z_REC1) / 2
+
+RIB = 8.0
+RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
+RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB), (Y_TUBE1 - RIB, Y_TUBE1)]
+PANEL_SCREW_X = [25.0, 70.0]
+
+
+# ---------------------------------------------------------------- hjelpere
+def box(x0, x1, y0, y1, z0, z1):
+    return cq.Workplane("XY").box(x1 - x0, y1 - y0, z1 - z0, centered=False).translate((x0, y0, z0))
+
+
+def cyl(p, d, r, h):
+    return cq.Solid.makeCylinder(r, h, V(*p), V(*d))
+
+
+def rounded(y0, y1, inset=0.0, r=R):
+    b = box(inset, W - inset, y0, y1, inset, HB - inset)
+    return b.edges("|Y").fillet(r)
+
+
+def rect_wire(y):
+    t = y / REC
+    side = (XC - GROOVE / 2 - SIDE_M) * t
+    x0, x1 = SIDE_M + side, W - SIDE_M - side
+    z0, z1 = Z_REC0 + STEEP * t, Z_REC1 - STEEP * t
+    pts = [V(x0, y, z0), V(x1, y, z0), V(x1, y, z1), V(x0, y, z1), V(x0, y, z0)]
+    return cq.Wire.makePolygon(pts)
+
+
+# ---------------------------------------------------------------- deler
+def front_panel():
+    p = rounded(0, T_FRONT)
+    recess = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True)
+    p = p.cut(recess)
+    # diskaapning i sporet
+    p = p.cut(box(XC - SLOT_W / 2, XC + SLOT_W / 2, -1, T_FRONT + 1, ZC_SLOT - SLOT_L / 2, ZC_SLOT + SLOT_L / 2))
+    # eject paa venstre chamfer
+    ez = ZC_SLOT - SLOT_L / 2 + EJECT_FROM_BOTTOM
+    ex = XC + EJECT_DX
+    p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
+    # power og reset under diskaapningen, LED over
+    zb = ZC_SLOT - SLOT_L / 2
+    for z in (zb - 7.0, zb - 15.0):
+        p = p.cut(cyl((XC, -1, z), (0, 1, 0), BTN_D / 2, T_FRONT + 2))
+    zt = ZC_SLOT + SLOT_L / 2
+    for z in (zt + 6.0, zt + 13.0):
+        p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
+    # pilothull bak for skruer gjennom ribbene i U-braketten
+    for (z0, z1) in RIB_Z:
+        for x in PANEL_SCREW_X:
+            p = p.cut(cyl((x, T_FRONT - 8.0, (z0 + z1) / 2), (0, 1, 0), PILOT / 2, 9.0))
+    return p
+
+
+def _ring():
+    return rounded(Y_TUBE0, Y_TUBE1).cut(rounded(Y_TUBE0 - 1, Y_TUBE1 + 1, inset=T, r=1.0))
+
+
+def u_bracket():
+    u = _ring().intersect(box(X_SPLIT, W + 1, 0, D, -1, HB + 1))
+    # ribber i topp og bunn, foran og bak: feste for front, bakpanel og sidepanel
+    for (y0, y1) in RIB_Y:
+        for (z0, z1) in RIB_Z:
+            u = u.union(box(X_SPLIT, W - T, y0, y1, z0, z1))
+    for iy, (y0, y1) in enumerate(RIB_Y):
+        for (z0, z1) in RIB_Z:
+            yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
+            # sidepanelskrue inn i ribbeenden
+            u = u.cut(cyl((X_SPLIT - 1, yc, zc), (1, 0, 0), PILOT / 2, 13.0))
+            for x in PANEL_SCREW_X:
+                if iy == 0:   # front: skrue innenfra gjennom ribben
+                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB + 2))
+                else:         # bak: pilothull for skrue utenfra
+                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), PILOT / 2, RIB + 2))
+    # avstandsstykker for hovedkortet
+    for (uu, vv) in ITX_HOLES:
+        y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
+        u = u.union(cyl((W - T - STANDOFF, y, z), (1, 0, 0), 4.0, STANDOFF + 0.5))
+        u = u.cut(cyl((W - T - STANDOFF - 1, y, z), (1, 0, 0), PILOT / 2, STANDOFF + 2.5))
+    # luftinntak i bunn, over foten
+    y = 30.0
+    while y < Y_TUBE1 - 20:
+        u = u.cut(box(16, 80, y, y + 4.0, -1, T + 1))
+        y += 9.0
+    # hull for fotskruer
+    for (x, yy) in FOOT_SCREWS:
+        u = u.cut(cyl((x, yy, -1), (0, 0, 1), CLEAR / 2, T + 2))
+    return u
+
+
+FOOT_SCREWS = [(10.0, 27.0), (86.0, 27.0), (10.0, 168.0), (86.0, 168.0)]
+
+
+def side_panel():
+    s = _ring().intersect(box(-1, X_SPLIT, 0, D, -1, HB + 1))
+    for (y0, y1) in RIB_Y:
+        for (z0, z1) in RIB_Z:
+            yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
+            s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
+            s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
+    return s
+
+
+def rear_panel():
+    p = rounded(Y_TUBE1, D)
+    y0, y1 = Y_TUBE1 - 1, D + 1
+    # I/O-vindu, trappet. Lav del for DB23 og lydjack, hoy del for stablede kontakter. ESTIMAT
+    p = p.cut(box(X_PCB - 14.5, X_PCB + 2.0, y0, y1, BOARD_Z0 + 8.0, BOARD_Z0 + 72.5))
+    p = p.cut(box(X_PCB - 34.5, X_PCB + 2.0, y0, y1, BOARD_Z0 + 72.0, BOARD_Z0 + 170.5))
+    # DC-inntak for PicoPSU
+    p = p.cut(cyl((25.0, y0, 100.0), (0, 1, 0), 4.0, T_REAR + 2))
+    # avtrekk oppe til venstre
+    z = 125.0
+    while z < 196:
+        p = p.cut(box(10, 42, y0, y1, z, z + 3.0))
+        z += 7.0
+    for (z0, z1) in RIB_Z:
+        for x in PANEL_SCREW_X:
+            p = p.cut(cyl((x, y0, (z0 + z1) / 2), (0, 1, 0), CLEAR / 2, T_REAR + 2))
+    return p
+
+
+def foot():
+    x0, x1, y0, y1 = FOOT_INSET, W - FOOT_INSET, FOOT_INSET, D
+    rw = 6.0
+    fin_t, gap = 3.0, 2.5
+    f = None
+    z = -FOOT_H
+    while z < -0.1:
+        fin = box(x0, x1, y0, y1, z, z + fin_t).cut(box(x0 + rw, x1 - rw, y0 + rw, y1 - rw, z - 1, z + fin_t + 1))
+        f = fin if f is None else f.union(fin)
+        z += fin_t + gap
+    # stolper som baerer lamellene, ca 28 mm mellom
+    n = 6
+    for i in range(n + 1):
+        y = y0 + (y1 - y0 - 4.0) * i / n
+        for xa in (x0, x1 - rw):
+            f = f.union(box(xa + 1.5, xa + rw, y, y + 4.0, -FOOT_H, 0))
+    for i in range(1, 3):
+        x = x0 + (x1 - x0 - 4.0) * i / 3
+        for ya in (y0, y1 - rw):
+            f = f.union(box(x, x + 4.0, ya + 1.5 if ya == y0 else ya, ya + rw if ya == y0 else ya + rw - 1.5, -FOOT_H, 0))
+    for (x, y) in FOOT_SCREWS:
+        f = f.union(box(x - 5, x + 5, y - 5, y + 5, -FOOT_H, 0).intersect(box(x0, x1, y0, y1, -FOOT_H, 0)))
+        f = f.cut(cyl((x, y, -10.0), (0, 0, 1), PILOT / 2, 11.0))
+    return f
+
+
+# ---------------------------------------------------------------- referansevolumer (skrives ikke ut)
+def ref_board():
+    pcb = box(X_PCB, X_PCB + PCB_T, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0, BOARD_Z0 + PCB)
+    comp = box(X_PCB - COMP_H, X_PCB, Y_PCB_FRONT + 2, Y_PCB_REAR, BOARD_Z0 + 2, BOARD_Z0 + PCB - 2)
+    return pcb, comp
+
+
+def ref_floppy():
+    xr = XC + FD_SLOT_FROM_TOP          # lokket mot hoyre
+    return box(xr - FD_H, xr, T_FRONT, T_FRONT + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
+
+
+def ref_picopsu():
+    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet. PicoPSU ca 45 over kortet, 20 tykk.
+    return box(X_PCB - 45.0, X_PCB, Y_PCB_REAR - 172.0 + 2.0, Y_PCB_REAR - 150.0, BOARD_Z0 + 103.0, BOARD_Z0 + 153.0)
+
+
+def ref_zorro(card_h=70.0):
+    cards = []
+    for u in (5.4, 20.4):               # slottposisjoner ESTIMAT fra kortbildet
+        cards.append(box(X_PCB - 5.0 - card_h, X_PCB - 5.0, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0 + u - 0.8, BOARD_Z0 + u + 0.8))
+    return cards
+
+
+PARTS = {
+    "frontpanel": (front_panel, (0.85, 0.83, 0.78)),
+    "u_brakett": (u_bracket, (0.75, 0.73, 0.68)),
+    "sidepanel_venstre": (side_panel, (0.75, 0.73, 0.68)),
+    "bakpanel": (rear_panel, (0.45, 0.45, 0.45)),
+    "fot": (foot, (0.45, 0.45, 0.45)),
+}
+
+if __name__ == "__main__":
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
+    os.makedirs(out, exist_ok=True)
+    asm = cq.Assembly(name="DeniseITX_kabinett")
+    for name, (fn, col) in PARTS.items():
+        s = fn()
+        cq.exporters.export(s, os.path.join(out, f"{name}.step"))
+        cq.exporters.export(s, os.path.join(out, f"{name}.stl"), tolerance=0.05, angularTolerance=0.2)
+        asm.add(s, name=name, color=cq.Color(*col))
+    pcb, comp = ref_board()
+    asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
+    asm.add(comp, name="REF_komponentsone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
+    asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
+    asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
+    for i, c in enumerate(ref_zorro()):
+        asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.1.step"))
+    print("ok", out)
