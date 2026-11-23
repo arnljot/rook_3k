@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.1 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.2 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -15,7 +15,7 @@ from cadquery import Vector as V
 # ---------------------------------------------------------------- parametre
 W = 95.0            # utvendig bredde
 D = 187.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = 212.0          # hoyde kabinettkropp uten fot
+HB = 220.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
 T_REAR = 3.0        # bakpanel
@@ -26,16 +26,21 @@ FOOT_INSET = 4.0
 REC = 10.0          # dybde chamfer
 FLOOR = 2.5         # gods bak sporet
 T_FRONT = REC + FLOOR
-SIDE_M = 12.5       # flat kant venstre/hoyre for chamfer starter
-TOP_M = 22.0        # flat kant topp
+CHAMFER_W = 23.3    # bredde paa skraa flate fra hver side
+SIDE_M = (W - 8.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre
+TOP_M = 32.0        # flat kant topp
 BOT_M = 45.0        # flat kant bunn
 GROOVE = 8.0        # flatt spor i bunn av chamfer
 STEEP = 4.0         # bredde paa bratt chamfer topp/bunn
 SLOT_L, SLOT_W = 100.0, 8.0          # diskaapning
 EJECT_L, EJECT_W = 21.0, 5.0         # eject-knapp ESTIMAT plassering
-EJECT_DX = -11.0    # eject senter i X relativt til sporets senter ESTIMAT
-EJECT_FROM_BOTTOM = 16.5             # eject senter over nedre ende av diskaapning ESTIMAT
-BTN_D = 5.5         # power/reset knappehull i sporet (forslag)
+EJECT_DX = 11.0     # eject senter i X relativt til sporets senter ESTIMAT
+EJECT_FROM_TOP = 16.5                # eject senter under ovre ende av diskaapning ESTIMAT
+LED_TOP_GAP = 2.0   # fra toppen av sporet til forste LED
+LED_PITCH = 7.0
+BTN_POCKET_W, BTN_POCKET_H, BTN_POCKET_D = 32.0, 12.0, 3.0   # fordypning for power/reset oppe til hoyre
+BTN_H = 7.0
+BTN_PWR_W, BTN_RST_W = 15.0, 9.0
 LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
 
 # hovedkort (Mini-ITX 170 x 170)
@@ -43,6 +48,11 @@ PCB = 170.0
 PCB_T = 1.6
 STANDOFF = 6.0
 BOARD_Z0 = 15.0     # Zorro-kanten av kortet over kroppens bunn
+IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O-aapning
+IO_BELOW_PCB = 2.24                # aapningens kant under PCB-undersiden (ATX)
+IO_CENTER_U = 92.2                 # aapningens senter maalt fra Zorro-kanten ESTIMAT (tilpasset skjoldets hull mot kortbildet)
+IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # skjoldets flens
+IO_CLEAR = 0.2
 IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
 COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
 ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u fra Zorro-kant, v fra bakkant)
@@ -63,7 +73,10 @@ Y_PCB_REAR = Y_TUBE1 - IO_GAP
 Y_PCB_FRONT = Y_PCB_REAR - PCB
 XC = W / 2
 Z_REC0, Z_REC1 = BOT_M, HB - TOP_M
-ZC_SLOT = (Z_REC0 + Z_REC1) / 2
+Z_GROOVE1 = Z_REC1 - STEEP
+Z_LEDS = [Z_GROOVE1 - LED_TOP_GAP - LED_L / 2 - i * LED_PITCH for i in range(2)]
+Z_SLOT1 = Z_LEDS[-1] - LED_L / 2 - 3.5      # diskaapning loftet opp under LED-ene
+ZC_SLOT = Z_SLOT1 - SLOT_L / 2
 
 RIB = 8.0
 RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
@@ -87,7 +100,7 @@ def rounded(y0, y1, inset=0.0, r=R):
 
 def rect_wire(y):
     t = y / REC
-    side = (XC - GROOVE / 2 - SIDE_M) * t
+    side = CHAMFER_W * t
     x0, x1 = SIDE_M + side, W - SIDE_M - side
     z0, z1 = Z_REC0 + STEEP * t, Z_REC1 - STEEP * t
     pts = [V(x0, y, z0), V(x1, y, z0), V(x1, y, z1), V(x0, y, z1), V(x0, y, z0)]
@@ -101,17 +114,22 @@ def front_panel():
     p = p.cut(recess)
     # diskaapning i sporet
     p = p.cut(box(XC - SLOT_W / 2, XC + SLOT_W / 2, -1, T_FRONT + 1, ZC_SLOT - SLOT_L / 2, ZC_SLOT + SLOT_L / 2))
-    # eject paa venstre chamfer
-    ez = ZC_SLOT - SLOT_L / 2 + EJECT_FROM_BOTTOM
+    # eject paa hoyre chamfer, floppy staar med lokket mot venstre
+    ez = Z_SLOT1 - EJECT_FROM_TOP
     ex = XC + EJECT_DX
     p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
-    # power og reset under diskaapningen, LED over
-    zb = ZC_SLOT - SLOT_L / 2
-    for z in (zb - 7.0, zb - 15.0):
-        p = p.cut(cyl((XC, -1, z), (0, 1, 0), BTN_D / 2, T_FRONT + 2))
-    zt = ZC_SLOT + SLOT_L / 2
-    for z in (zt + 6.0, zt + 13.0):
+    # LED-vinduer i toppen av sporet
+    for z in Z_LEDS:
         p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
+    # fordypning med rektangulaere power- og resetknapper i ovre kant, til hoyre
+    px1 = W - SIDE_M
+    px0 = px1 - BTN_POCKET_W
+    pzc = Z_REC1 + 3.0 + BTN_POCKET_H / 2 + 6.0
+    p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pzc - BTN_POCKET_H / 2, pzc + BTN_POCKET_H / 2))
+    bx = px1 - 2.5
+    for w in (BTN_PWR_W, BTN_RST_W):
+        p = p.cut(box(bx - w, bx, -1, T_FRONT + 1, pzc - BTN_H / 2, pzc + BTN_H / 2))
+        bx -= w + 3.0
     # pilothull bak for skruer gjennom ribbene i U-braketten
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -171,15 +189,21 @@ def side_panel():
 def rear_panel():
     p = rounded(Y_TUBE1, D)
     y0, y1 = Y_TUBE1 - 1, D + 1
-    # I/O-vindu, trappet. Lav del for DB23 og lydjack, hoy del for stablede kontakter. ESTIMAT
-    p = p.cut(box(X_PCB - 14.5, X_PCB + 2.0, y0, y1, BOARD_Z0 + 8.0, BOARD_Z0 + 72.5))
-    p = p.cut(box(X_PCB - 34.5, X_PCB + 2.0, y0, y1, BOARD_Z0 + 72.0, BOARD_Z0 + 170.5))
+    # standard ITX I/O-aapning for DeniseITX I/O-skjoldet (162,75 x 48,45, kant 158,5 x 44,5)
+    ax1 = W - T - STANDOFF + IO_BELOW_PCB           # 2,24 under PCB-undersiden
+    ax0 = ax1 - IO_AP_H
+    az0 = BOARD_Z0 + IO_CENTER_U - IO_AP_W / 2
+    az1 = az0 + IO_AP_W
+    c = IO_CLEAR
+    p = p.cut(box(ax0 - c, ax1 + c, y0, y1, az0 - c, az1 + c))
+    f = IO_FLANGE + c
+    p = p.cut(box(ax0 - f, ax1 + f, y0, Y_TUBE1 + IO_FLANGE_T, az0 - f, az1 + f))   # forsenkning for flensen paa innsiden
     # DC-inntak for PicoPSU
     p = p.cut(cyl((25.0, y0, 100.0), (0, 1, 0), 4.0, T_REAR + 2))
     # avtrekk oppe til venstre
     z = 125.0
-    while z < 196:
-        p = p.cut(box(10, 42, y0, y1, z, z + 3.0))
+    while z < HB - 16:
+        p = p.cut(box(10, 37, y0, y1, z, z + 3.0))
         z += 7.0
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -201,8 +225,8 @@ def foot():
     n = 6
     for i in range(n + 1):
         y = y0 + (y1 - y0 - 4.0) * i / n
-        for xa in (x0, x1 - rw):
-            f = f.union(box(xa + 1.5, xa + rw, y, y + 4.0, -FOOT_H, 0))
+        f = f.union(box(x0 + 1.5, x0 + rw, y, y + 4.0, -FOOT_H, 0))
+        f = f.union(box(x1 - rw, x1 - 1.5, y, y + 4.0, -FOOT_H, 0))
     for i in range(1, 3):
         x = x0 + (x1 - x0 - 4.0) * i / 3
         for ya in (y0, y1 - rw):
@@ -221,8 +245,8 @@ def ref_board():
 
 
 def ref_floppy():
-    xr = XC + FD_SLOT_FROM_TOP          # lokket mot hoyre
-    return box(xr - FD_H, xr, T_FRONT, T_FRONT + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
+    xl = XC - FD_SLOT_FROM_TOP          # lokket mot venstre
+    return box(xl, xl + FD_H, T_FRONT, T_FRONT + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
 
 
 def ref_picopsu():
@@ -261,5 +285,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.1.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.2.step"))
     print("ok", out)
