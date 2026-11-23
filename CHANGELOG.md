@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.13 - Floppy shelf
+
+- Shelf on the left side panel that carries the floppy drive; body height 227 mm.
+- The panel with drive swings in around its front edge so the eject button enters its cut-out.
+
 ## v0.12 - Foot corner posts
 
 - Corner posts of the foot inset in both directions so the slats run unbroken around the corners.

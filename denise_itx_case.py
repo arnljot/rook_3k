@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.12 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.13 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -15,7 +15,7 @@ from cadquery import Vector as V
 # ---------------------------------------------------------------- parametre
 W = 117.0           # utvendig bredde
 D = 210.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = 225.0          # hoyde kabinettkropp uten fot
+HB = 227.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
 T_REAR = 3.0        # bakpanel
@@ -97,6 +97,11 @@ PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
 DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
 
 # skruer M3
+# floppyhylle paa venstre sidepanel
+FD_HOLES_Y = [21.0, 51.0, 81.0]   # skruehull paa drivens side, fra drivens forkant ESTIMAT, maa maales
+FD_HOLE_UP = 5.0                  # hullsenter over drivens bunnplate ESTIMAT, maa maales
+SHELF_T = 4.0
+SHELF_Y0, SHELF_Y1 = 1.5, 138.0   # hyllas utstrekning bak fronten
 PILOT = 2.6
 CLEAR = 3.4
 
@@ -293,6 +298,21 @@ def side_panel():
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
             s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
             s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
+    # hylle som floppyen hviler paa og skrus fast i, med avstivere under
+    fb = ref_floppy().val().BoundingBox()
+    zt = fb.zmin
+    ya, yb = T_FRONT + SHELF_Y0, T_FRONT + SHELF_Y1
+    sh = box(T, fb.xmax, ya, yb, zt - SHELF_T, zt)
+    for y in (ya, (ya + yb) / 2 - 1.5, yb - 3.0):
+        g = (cq.Workplane("XZ").polyline([(T, zt - SHELF_T), (T + 42.0, zt - SHELF_T), (T, zt - SHELF_T - 35.0)]).close()
+             .extrude(-3.0).translate((0, y, 0)))
+        sh = sh.union(g)
+    hx = fb.xmax - FD_HOLE_UP
+    for hy in FD_HOLES_Y:
+        y = T_FRONT + hy
+        sh = sh.cut(box(hx - CLEAR / 2, hx + CLEAR / 2, y - 3.2, y + 3.2, zt - SHELF_T - 1, zt + 1))      # langhull for M3
+        sh = sh.cut(box(hx - 3.3, hx + 3.3, y - 4.8, y + 4.8, zt - SHELF_T - 1, zt - SHELF_T + 2.0))        # forsenkning for skruehode
+    s = s.union(sh)
     return s
 
 
@@ -402,5 +422,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.12.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.13.step"))
     print("ok", out)
