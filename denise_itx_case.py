@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: CERN-OHL-S-2.0
+# Copyright (C) 2026 Arnljot Arntsen
 """
 Denise ITX staaende kabinett, konsept v0.21 (CadQuery).
 

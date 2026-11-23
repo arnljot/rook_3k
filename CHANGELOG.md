@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## Unreleased
+
+- Licensed under CERN-OHL-S-2.0. Copyright and licence notices added to README and scripts.
+
 ## v0.21 - Connector recesses and 3MF export
 
 - 12.1 mm recess for the DC jack and a 33.2 x 13.3 mm recess for the VGA panel connector on the inside of the rear panel; DC hole 8.1 mm.

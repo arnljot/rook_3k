@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: CERN-OHL-S-2.0
+# Copyright (C) 2026 Arnljot Arntsen
 """Lager en Bambu Studio-prosjektfil (.3mf) med en byggeplate per del, ferdig orientert for utskrift.
 Bambu Studio laster bare plateinndelingen naar filen har prosjektinnstillinger, saa de hentes fra et
 prosjekt lagret i Bambu Studio (bambu_template.3mf).
