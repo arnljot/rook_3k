@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.15 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.16 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -100,7 +100,7 @@ DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkorte
 # floppyhylle paa venstre sidepanel
 # Noyaktige hull for drivens sidehull, maalt med skyvelaer (ikke proevd): 21, 81 og 111 fra drivens forkant. M3 x 0,5.
 FD_HOLES_Y = [21.0, 81.0, 111.0]
-FD_HOLE_UP = 5.0                  # hullsenter over drivens bunnplate. ESTIMAT etter MF355B type 3, maa maales
+FD_HOLE_UP = 5.75                 # hullsenter over drivens bunnplate. Maalt 5,75, usikkert mellom 5,5 og 6. Proeves med testbit
 FD_GAP = 0.3                      # luft mellom drivens forkant og baksiden av frontpanelet
 FD_REAR_HOLE = FD_HOLES_Y[-1]
 SHELF_T = 4.0
@@ -397,6 +397,25 @@ def ref_zorro(card_h=70.0):
     return cards
 
 
+TEST_UPS = [5.0, 5.5, 6.0]
+
+
+def floppy_testbit():
+    # Liten mal for aa proeve hullene mot driven for sidepanelet skrives ut. Skrives ut flatt.
+    # Drivens side legges paa platen, bunnplaten mot den lange kanten, forkanten mot den korte.
+    L = FD_HOLES_Y[-1] + 8.0
+    p = box(0, 14.0, 0, L, 0, 3.0)
+    p = p.union(box(-2.0, 0, -2.0, L, 0, 9.0))        # lang anleggskant = drivens bunnplate
+    p = p.union(box(-2.0, 14.0, -2.0, 0, 0, 9.0))     # kort anleggskant = drivens forkant
+    # hvert hull har sin egen hoyde over bunnplaten, saa en utskrift avgjor hoyden: fremste 5,0, midtre 5,5, bakerste 6,0
+    # antall hakk i ytterkanten ved hullet viser hvilket det er (1, 2, 3)
+    for i, (hy, up) in enumerate(zip(FD_HOLES_Y, TEST_UPS)):
+        p = p.cut(cyl((up, hy, -1), (0, 0, 1), 1.6, 5.0))
+        for k in range(i + 1):
+            p = p.cut(box(12.5, 15.0, hy - 1.0 + 3.0 * (k - i / 2.0), hy + 1.0 + 3.0 * (k - i / 2.0), -1, 4.0))
+    return p
+
+
 PARTS = {
     "knapp_power": (lambda: button(0), (0.9, 0.88, 0.82)),
     "knapp_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
@@ -426,5 +445,8 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.15.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.16.step"))
+    tb = floppy_testbit()
+    cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
+    cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)
     print("ok", out)

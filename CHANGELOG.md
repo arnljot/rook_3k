@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.16 - Test gauge and STL export
+
+- Small printable gauge to verify floppy hole positions and hole height (5.0, 5.5 and 6.0 mm) before printing the side panel.
+- Hole height set to 5.75 mm pending that test.
+- STL export for all parts.
+
 ## v0.15 - Exact floppy holes
 
 - Slots replaced by three exact M3 holes at 21, 81 and 111 mm from the drive front; drive length 129 mm.
