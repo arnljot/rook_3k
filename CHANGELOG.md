@@ -2,6 +2,12 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.8 - Measured component data
+
+- Floppy raised to clear the disk-on-module on the accelerator card; body height 225 mm.
+- Slot offset in the drive and PicoPSU height taken from measurements.
+- Known issue: floppy drive and PicoPSU collide with a centred slot at 95 mm width.
+
 ## v0.7 - Foot symmetry fix
 
 - Foot screw blocks were asymmetric and filled the slats on one side. Now mirrored and inset.

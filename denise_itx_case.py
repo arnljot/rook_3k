@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.7 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.8 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -15,7 +15,7 @@ from cadquery import Vector as V
 # ---------------------------------------------------------------- parametre
 W = 95.0            # utvendig bredde
 D = 187.0           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = 210.0          # hoyde kabinettkropp uten fot
+HB = 225.0          # hoyde kabinettkropp uten fot
 R = 4.0             # hjorneradius sett forfra
 T = 3.0             # veggtykkelse
 T_REAR = 3.0        # bakpanel
@@ -67,7 +67,9 @@ ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # 
 
 # floppy standard 3,5"
 FD_W, FD_H, FD_L = 101.6, 25.4, 146.0
-FD_SLOT_FROM_TOP = 8.5   # diskaapningens senter under lokket ESTIMAT
+FD_SLOT_FROM_TOP = 9.0 + 3.3 / 2   # 9 mm fra lokket til disken (maalt), pluss halv disktykkelse
+PICO_H = 36.0            # PicoPSU over hovedkortet (maalt)
+DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
 
 # skruer M3
 PILOT = 2.6
@@ -287,8 +289,8 @@ def ref_floppy():
 
 
 def ref_picopsu():
-    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet. PicoPSU ca 45 over kortet, 20 tykk.
-    return box(X_PCB - 45.0, X_PCB, Y_PCB_REAR - 172.0 + 2.0, Y_PCB_REAR - 150.0, BOARD_Z0 + 103.0, BOARD_Z0 + 153.0)
+    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet. Posisjon og tykkelse (20) er anslag.
+    return box(X_PCB - PICO_H, X_PCB, Y_PCB_REAR - 172.0 + 2.0, Y_PCB_REAR - 150.0, BOARD_Z0 + 103.0, BOARD_Z0 + 153.0)
 
 
 def ref_zorro(card_h=70.0):
@@ -324,5 +326,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.7.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.8.step"))
     print("ok", out)
