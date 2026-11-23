@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.18 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.19 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -90,9 +90,18 @@ IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (s
 # Zorro-kort: to slotter, kortplan lest av kortbildet ESTIMAT
 ZORRO_U = [5.2, 5.2 + 15.24]       # kortplan fra hovedkortets nedre kant
 ZORRO_OPEN_W = 11.0
-ZORRO_X0, ZORRO_X1 = 29.4, 91.0    # aapningens utstrekning. Naermere hovedkortet enn 91 er det I/O-utsnitt
-LIP_L, LIP_D = 6.5, 8.0            # leppe paa innsiden for aa skru fast brakett eller blindlokk
-COVER_T = 2.0
+ZORRO_X0, ZORRO_X1 = 31.0, 91.0    # aapningens utstrekning. Naermere hovedkortet enn 91 er det I/O-utsnitt
+# Leppe og blindlokk etter monsteret til et standard PCI-blindlokk (PCI+cover.3mf), smalnet og kortet ned:
+# plate mot innsiden av bakpanelet, flik boyd innover i enden lengst fra hovedkortet, skruehull 6,45 over platens
+# underside og 1,5 til siden for midten i originalen. Skruen gaar i kortets innskyvingsretning.
+LIP_X0, LIP_X1 = 22.9, 29.4        # leppa i X
+LIP_D = 10.2                       # hvor langt leppa staar inn fra bakpanelet
+LIP_Z = (-2.25, 6.25)              # leppa i Z relativt til kortplanet. Resten av bredden er hals paa lokket
+LIP_HOLE_IN = 6.45                 # innsatshull fra bakpanelets innside (som paa standardlokket)
+LIP_HOLE_DZ = 2.0                  # innsatshull relativt til kortplanet
+COVER_W = 12.5
+COVER_T = 1.5
+COVER_TAB_H = 13.5
 DC_X, DC_Z, DC_D = 12.0, 19.0, 8.0
 VGA_X, VGA_Z = 13.5, 45.0          # DE-15 paa hoykant. Aapning 10 x 18, skruehull 25 fra hverandre ESTIMAT
 IO_CLEAR = 0.2
@@ -368,8 +377,8 @@ def rear_panel():
     for zp in zorro_planes():
         h = ZORRO_OPEN_W / 2
         p = p.cut(box(ZORRO_X0, ZORRO_X1, y0, y1, zp - h, zp + h))
-        p = p.union(box(ZORRO_X0 - LIP_L, ZORRO_X0, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp - h, zp + h))
-        p = p.cut(insert_hole((ZORRO_X0 - LIP_L, Y_TUBE1 - LIP_D / 2, zp), (1, 0, 0), ext=1.0))
+        p = p.union(box(LIP_X0, LIP_X1, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp + LIP_Z[0], zp + LIP_Z[1]))
+        p = p.cut(insert_hole((LIP_X0, Y_TUBE1 - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), ext=1.0))
     # DC-inntak og VGA paa hoykant i venstre soyle
     p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
     p = p.cut(box(VGA_X - 5.0, VGA_X + 5.0, y0, y1, VGA_Z - 9.0, VGA_Z + 9.0).edges("|Y").fillet(2.0))
@@ -387,16 +396,19 @@ def rear_panel():
 
 
 def zorro_cover(i):
-    """Blindlokk for Zorro-aapning i. Flik mot leppa, plate paa leppas innerkant, plugg som fyller aapningen.
-    Skrives ut liggende paa siden. Settes inn fra venstre og skrus i leppa med M3 x 6."""
+    """Blindlokk for Zorro-aapning i, etter monster av standard PCI-blindlokk.
+    Skrives ut flatt med utsiden ned. Legges rett paa plass og skrus i leppa med M3 x 6."""
     zp = zorro_planes()[i]
-    h = ZORRO_OPEN_W / 2
-    yp = Y_TUBE1 - LIP_D                       # leppas innerkant
-    xt = ZORRO_X0 - LIP_L                      # leppas venstre flate
-    c = box(xt - COVER_T, ZORRO_X1 + 1.5, yp - COVER_T, yp, zp - h, zp + h)                    # plate
-    c = c.union(box(xt - COVER_T, xt, yp - COVER_T, Y_TUBE1 - 0.5, zp - h, zp + h))            # flik
-    c = c.union(box(ZORRO_X0 + 0.3, ZORRO_X1 - 0.3, yp, D - 0.5, zp - h + 0.3, zp + h - 0.3))  # plugg
-    c = c.cut(cyl((xt - COVER_T - 1, Y_TUBE1 - LIP_D / 2, zp), (1, 0, 0), CLEAR / 2, COVER_T + 2))
+    w = COVER_W / 2
+    yi = Y_TUBE1                                   # bakpanelets innside
+    tt = 1.5                                       # tykkelse flik
+    c = box(LIP_X1 + 0.3, ZORRO_X1 + 1.5, yi - COVER_T, yi, zp - w, zp + w)                       # plate over aapningen
+    c = c.union(box(LIP_X0 - tt, LIP_X1 + 0.3, yi - COVER_T, yi, zp - w, zp + LIP_Z[0] - 0.5))   # hals forbi leppa
+    c = c.union(box(LIP_X0 - tt, LIP_X0, yi - COVER_TAB_H, yi, zp - w, zp + w))                   # flik mot leppa
+    rim = box(ZORRO_X0, ZORRO_X1, yi - COVER_T - 1.2, yi - COVER_T, zp - 5.0, zp + 5.0)
+    rim = rim.cut(box(ZORRO_X0 + 1.5, ZORRO_X1 - 1.5, yi - COVER_T - 2, yi, zp - 3.5, zp + 3.5))
+    c = c.union(rim)                                                                              # avstivende ramme
+    c = c.cut(cyl((LIP_X0 - tt - 1, yi - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), CLEAR / 2, tt + 2))
     return c
 
 
@@ -504,7 +516,7 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.18.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.19.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)

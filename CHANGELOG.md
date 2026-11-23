@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.19 - Covers patterned on a PCI cover
+
+- Lip and blanking cover follow the layout of a standard PCI slot cover (tab, screw in the insertion direction, hole 6.45 mm inside the panel), narrowed and shortened for the DeniseITX slot pitch.
+
 ## v0.18 - Rear panel rework
 
 - I/O cut-outs following the DeniseITX I/O shield layout built into the rear panel; the separate shield aperture is gone.
