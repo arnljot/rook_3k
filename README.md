@@ -16,6 +16,10 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 Work in progress. The parts are modelled but have not been test printed, and several dimensions are still estimates. See [CHANGELOG.md](CHANGELOG.md).
 
+## Hardware
+
+The model is designed for M3 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `denise_itx_case.py` can be changed to suit other inserts.
+
 ## Contents
 
 - `denise_itx_case.py` is the parametric CadQuery model. Running it writes the STEP files.
