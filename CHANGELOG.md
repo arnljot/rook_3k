@@ -4,6 +4,7 @@ All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are
 
 ## Unreleased
 
+- README has a printing section: designed for the Bambu Lab H2D, with part sizes and an assessment for 254 mm class printers.
 - STL exports removed; the model script no longer writes them.
 - Scripts moved to `src/`, with a README on how to run them. Both take an optional output directory.
 - STEP files and renders moved to `out/`, which is where the model script now writes by default. The 3MF project stays in the repository root.

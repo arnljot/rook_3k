@@ -18,6 +18,28 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 Work in progress. The parts are modelled but have not been test printed, and several dimensions are still estimates. See [CHANGELOG.md](CHANGELOG.md).
 
+## Printing
+
+The case is designed for PLA on a Bambu Lab H2D, which is the printer it has been laid out and sliced for. The Bambu Studio project in the repository root uses the H2D bed.
+
+It should also fit printers with a build volume of about 254 x 254 x 254 mm, such as the common 256 mm class. This has been checked against the part dimensions only, not by printing.
+
+| Part | Footprint on the bed | Height |
+|---|---|---|
+| U-bracket | 227 x 195 mm | 113 mm |
+| Left side panel | 227 x 195 mm | 64 mm |
+| Front panel | 227 x 117 mm | 13 mm |
+| Rear panel | 227 x 117 mm | 13 mm |
+| Foot | 206 x 109 mm | 14 mm |
+
+The longest dimension is 227 mm, which leaves about 13 mm of margin on each side of a 254 mm bed. Things to watch on a smaller printer:
+
+- There is little room for a brim or a skirt around the U-bracket and the side panel. Corner lifting on these large flat parts has to be handled by bed adhesion rather than a wide brim.
+- Some printers reserve part of the bed, for example a corner for the purge line or the nozzle wipe. Check that the 227 x 195 mm footprint clears it.
+- `src/make_3mf.py` takes the bed size from the template project, so a template saved for the smaller printer gives plates laid out for that bed.
+
+Printers with a bed shorter than 227 mm in both directions cannot print the main parts without splitting them.
+
 ## Hardware
 
 The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The parameters `INS_D`, `INS_DEPTH` and `INS_EXT` in `src/denise_itx_case.py` can be changed to suit other inserts.
