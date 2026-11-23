@@ -1,6 +1,5 @@
 *.py text eol=lf
 *.md text eol=lf
 *.step -text
-*.stl binary
 *.3mf binary
 *.png binary
