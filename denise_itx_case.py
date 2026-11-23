@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.20 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.21 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -103,7 +103,9 @@ COVER_W = 12.5
 COVER_T = 1.5
 COVER_TAB_H = 13.5
 # DC og VGA ligger over Zorro-aapningene, saa det er fritt aa komme til skruene i leppene fra venstre
-DC_X, DC_Z, DC_D = 14.0, 52.0, 8.0
+DC_X, DC_Z, DC_D = 14.0, 52.0, 8.1   # hals maalt til 7,75
+DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # fordypning paa innsiden og gods som staar igjen. Hals 4,5 lang, mutter 1,88 tykk
+VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, 1.5   # fordypning for panelkontaktens hus, og gods som staar igjen
 VGA_X, VGA_Z = 44.0, 52.0          # DE-15 liggende. Aapning 18 x 10, skruehull 25 fra hverandre ESTIMAT
 IO_CLEAR = 0.2
 IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
@@ -382,6 +384,9 @@ def rear_panel():
         p = p.cut(insert_hole((LIP_X0, Y_TUBE1 - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), ext=1.0))
     # DC-inntak og VGA paa hoykant i venstre soyle
     p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
+    p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_REC_D / 2, 1 + T_REAR - DC_REC_LEFT))
+    p = p.cut(box(VGA_X - VGA_REC_W / 2, VGA_X + VGA_REC_W / 2, y0, Y_TUBE1 + T_REAR - VGA_REC_LEFT,
+                  VGA_Z - VGA_REC_H / 2, VGA_Z + VGA_REC_H / 2))
     p = p.cut(box(VGA_X - 9.0, VGA_X + 9.0, y0, y1, VGA_Z - 5.0, VGA_Z + 5.0).edges("|Y").fillet(2.0))
     for dx in (-12.5, 12.5):
         p = p.cut(cyl((VGA_X + dx, y0, VGA_Z), (0, 1, 0), 1.6, T_REAR + 2))
@@ -517,7 +522,7 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.20.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.21.step"))
     tb = floppy_testbit()
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
     cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.stl"), tolerance=0.02, angularTolerance=0.1)

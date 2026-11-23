@@ -2,6 +2,11 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.21 - Connector recesses and 3MF export
+
+- 12.1 mm recess for the DC jack and a 33.2 x 13.3 mm recess for the VGA panel connector on the inside of the rear panel; DC hole 8.1 mm.
+- make_3mf.py writes a Bambu Studio project with one build plate per part, oriented for printing, using project settings from a template project.
+
 ## v0.20 - Connectors above the Zorro openings
 
 - VGA (now horizontal) and DC inlet moved above the Zorro openings to keep the lip screws accessible.
