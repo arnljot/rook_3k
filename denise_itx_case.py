@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.3 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.4 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -38,11 +38,11 @@ EJECT_DX = 11.0     # eject senter i X relativt til sporets senter ESTIMAT
 EJECT_FROM_TOP = 16.5                # eject senter under ovre ende av diskaapning ESTIMAT
 LED_TOP_GAP = 2.0   # fra toppen av sporet til forste LED
 LED_PITCH = 7.0
-BTN_POCKET_D = 3.0  # fordypning for power/reset i hoyre kant, oppe
+BTN_POCKET_D = 3.0  # fordypning for power/reset i venstre kant
 BTN_W = 7.0         # knappene staar paa hoykant
 BTN_PWR_L, BTN_RST_L = 15.0, 10.0
 BTN_GAP, BTN_EDGE = 4.0, 2.5
-BTN_TOP = 8.0       # fra overkant kabinett til fordypning
+BTN_XC = 11.5       # knappenes senter fra venstre side, gir plass til 15,6 mm MX-bryter innenfor sidepanelet
 BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
 BTN_CLEAR = 0.3
 LED_W, LED_L = 2.2, 5.0              # LED-vinduer i sporet (forslag)
@@ -112,16 +112,15 @@ def rect_wire(y):
 
 
 def button_layout():
-    xc = W - SIDE_M / 2
-    pw = BTN_W + 2 * BTN_EDGE
-    pz1 = HB - BTN_TOP
-    pz0 = pz1 - (2 * BTN_EDGE + BTN_PWR_L + BTN_GAP + BTN_RST_L)
-    z = pz1 - BTN_EDGE
+    # venstre kant. Toppen av power paa linje med underkant av toppkanten, fordypningen aapen ut mot venstre side
+    z = Z_REC1
+    pz1 = z + BTN_EDGE
+    pz0 = z - BTN_PWR_L - BTN_GAP - BTN_RST_L - BTN_EDGE
     holes = []
     for l in (BTN_PWR_L, BTN_RST_L):
-        holes.append((xc - BTN_W / 2, xc + BTN_W / 2, z - l, z))
+        holes.append((BTN_XC - BTN_W / 2, BTN_XC + BTN_W / 2, z - l, z))
         z -= l + BTN_GAP
-    return (xc - pw / 2, xc + pw / 2, pz0, pz1), holes
+    return (-1.0, BTN_XC + BTN_W / 2 + BTN_EDGE, pz0, pz1), holes
 
 
 def ref_buttons():
@@ -143,7 +142,7 @@ def front_panel():
     # LED-vinduer i toppen av sporet
     for z in Z_LEDS:
         p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
-    # fordypning med staaende power- og resetknapp i hoyre kant, oppe
+    # fordypning med staaende power- og resetknapp i venstre kant
     (px0, px1, pz0, pz1), holes = button_layout()
     p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pz0, pz1))
     for (x0, x1, z0, z1) in holes:
@@ -306,5 +305,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.3.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.4.step"))
     print("ok", out)

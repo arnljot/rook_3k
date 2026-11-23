@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.4 - Buttons on the left edge
+
+- Power and reset moved to the left edge, with the pocket open through the side of the front.
+
 ## v0.3 - Slimmer top edge
 
 - Top edge reduced to 22 mm, close to the side edges.
