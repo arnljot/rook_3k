@@ -1,5 +1,5 @@
 """
-Denise ITX staaende kabinett, konsept v0.11 (CadQuery).
+Denise ITX staaende kabinett, konsept v0.12 (CadQuery).
 
 Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
 Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
@@ -334,7 +334,7 @@ def foot():
     # stolper som baerer lamellene, ca 28 mm mellom
     n = 6
     for i in range(n + 1):
-        y = y0 + (y1 - y0 - 4.0) * i / n
+        y = y0 + 1.5 + (y1 - y0 - 4.0 - 3.0) * i / n      # hjornestolpene trukket inn ogsaa i dybden
         f = f.union(box(x0 + 1.5, x0 + rw, y, y + 4.0, -FOOT_H, 0))
         f = f.union(box(x1 - rw, x1 - 1.5, y, y + 4.0, -FOOT_H, 0))
     for i in range(1, 3):
@@ -402,5 +402,5 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.11.step"))
+    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.12.step"))
     print("ok", out)

@@ -2,6 +2,10 @@
 
 All notable changes to the DeniseITX case. Versions are tagged `vX.Y` in git.
 
+## v0.12 - Foot corner posts
+
+- Corner posts of the foot inset in both directions so the slats run unbroken around the corners.
+
 ## v0.11 - Switches behind the buttons
 
 - Button plungers with a foot and a cross socket for MX-style key switches; switch plate integrated in the U-bracket.
