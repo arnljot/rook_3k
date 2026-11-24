@@ -72,6 +72,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `src/rook3k.py` is the parametric CadQuery model. Running it writes the STEP files.
 - `src/make_3mf.py` writes a Bambu Studio project with one build plate per part. It needs a `bambu_template.3mf` saved from your own Bambu Studio.
 - `config.txt` holds the options that can be changed without editing the model: the mainboard, the case size, floppy drive, buttons, Zorro slots, feet and more.
+- `src/render.py` draws the pictures on this page from the model.
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
 - `rook3k_v0.25.3mf` is the Bambu Studio project for v0.25 with the default configuration, for the Bambu Lab H2D.

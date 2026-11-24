@@ -2,6 +2,10 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## Unreleased
+
+- `src/render.py` draws the line drawings and the shaded picture in the README from the model, for any configuration.
+
 ## v0.25 - VGA recess set from the test gauge
 
 - The recess for the VGA panel connector now leaves 0.8 mm of material, down from 1.5. All three steps of the test gauge fitted, 1.2, 1.0 and 0.8 mm, and the deepest was chosen.

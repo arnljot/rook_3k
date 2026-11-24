@@ -83,3 +83,18 @@ python src/make_3mf.py [version] [template.3mf] [output_dir]
 | `output_dir` | the repository root | Where the project file is written. |
 
 The template is not part of the repository, because it holds the printer profile and user details of whoever saved it. To make one, open Bambu Studio, choose your printer, filament and process, and save an empty project as `bambu_template.3mf` in the repository root. Bambu Studio only loads the plate layout when the file carries project settings, which is why the template is required.
+
+## render.py
+
+Draws the three pictures used in the README: two sheets of line drawings and one shaded picture of the case from the front and from the rear. It builds the parts from `rook3k.py`, so it follows `config.txt` and shows the case you have configured.
+
+```bash
+pip install cairosvg pillow
+python src/render.py [output_dir]
+```
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `output_dir` | `out/` in the repository root | Where `rook3k_overview.png`, `rook3k_rear_panel.png` and `rook3k_shaded.png` are written. |
+
+`--config <file>` works here as well. The shaded picture is drawn with VTK, which is installed together with CadQuery. It needs a graphics driver that can render without a window, which an ordinary desktop has. The colours and the two camera angles are set near the top of the shaded part of the script.
