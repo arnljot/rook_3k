@@ -75,6 +75,10 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `rook3k_v0.24.3mf` is the Bambu Studio project for v0.24 with the default configuration, for the Bambu Lab H2D.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
 
+## Trivia
+
+The rook comes from a game where the number of possible games is close to endless, and where legend has the inventor ask for one grain on the first square of the board, two on the second, four on the third and so on. The case has a little of the same. As of v0.24, the choice of mainboard, Zorro slots, buttons, LED windows, foot, front styling, badge recess, floppy drive, rear ports and SSD mount gives 57,600 different cases. That is before any change to the height, width and depth, which are free as well.
+
 ## Credits
 
 Designed by Arnljot Arntsen. The CAD model was written with Claude Fable 5.2 (Anthropic) as an AI tool, under the designer's direction. All design decisions and all responsibility for the design rest with the designer.
