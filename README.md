@@ -76,7 +76,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
 - `rook3k_v0.25.3mf` is the Bambu Studio project for v0.25 with the default configuration, for the Bambu Lab H2D.
-- `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
+- `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines. `rook3k_social_preview.png` is the 1280 x 640 picture used as the social preview of the repository.
 
 ## Trivia
 
