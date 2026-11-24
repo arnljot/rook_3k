@@ -1,13 +1,14 @@
 # Rook 3K configuration
 #
-# Read by src/denise_itx_case.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
+# Read by src/rook3k.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
 # All dimensions are in millimetres. A key that is left out or left empty keeps its default.
 # The values below are the defaults.
 
 # --- Mainboard -----------------------------------------------------------------
 # denise_itx  DeniseITX, with its I/O cut-outs built into the rear panel and two Zorro slots.
 # pc_itx      Any Mini-ITX board: a standard ATX aperture for the loose I/O shield. No Zorro slots. Not test printed.
-# alicia_itx  Planned, not available yet.
+# alicia_itx  Alicia 1200, with its I/O cut-outs built into the rear panel. No Zorro slots.
+#             The dimensions have not been verified against an actual Alicia yet.
 mainboard=denise_itx
 
 # --- Case size ---------------------------------------------------------------
@@ -90,11 +91,11 @@ floppy_mount_hole_height=5
 zorro_slot_1=open
 zorro_slot_2=open
 
-# Cut-out for a DE-15 panel connector, for example from an Indivision.
-back_port_vga_enable=true
+# Cut-out for a DE-15 panel connector, for example from an Indivision scan doubler.
+back_port_vga_enable=false
 
-# Material left in the recess behind the VGA cut-out, 0.8 to 1.2. A test gauge with 1.2, 1.0 and 0.8
-# is written to out/vga_test_gauge.step. All three fitted the connector it was tried with.
+# Material left in the recess behind the VGA cut-out, 0.8 to 1.2. With the cut-out enabled, a test gauge
+# with 1.2, 1.0 and 0.8 is written to out/vga_test_gauge.step. All three fitted the connector it was tried with.
 back_port_vga_rim_thickness=0.8
 
 # Hole for the DC panel jack, and its diameter.

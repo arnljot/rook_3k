@@ -48,7 +48,7 @@ CONFIG_DEFAULTS = {
     "floppy_mount_hole_height": 5.0,
     "zorro_slot_1": "open",
     "zorro_slot_2": "open",
-    "back_port_vga_enable": True,
+    "back_port_vga_enable": False,
     "back_port_vga_rim_thickness": 0.8,
     "back_port_dc_enable": True,
     "back_port_dc_diameter": 8.1,
@@ -123,12 +123,13 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.25"
+VERSION = "v0.26"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
 if MAINBOARD == "alicia_itx":
-    config_error("mainboard=alicia_itx is planned but not available yet")
+    print("warning: the dimensions for mainboard=alicia_itx have not been verified against an actual Alicia yet",
+          file=sys.stderr)
 HAS_ZORRO = MAINBOARD == "denise_itx"
 ZORRO_KEYS = ("zorro_slot_1", "zorro_slot_2")
 for _k in ZORRO_KEYS:
@@ -244,6 +245,19 @@ IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (s
 if MAINBOARD == "pc_itx":
     # standard ATX aperture for a loose I/O shield, with a pocket on the inside so the shield can clip to a thin rim
     IO_RECTS, IO_CIRCLES = [(2.0, 2.0, 2.0 + IO_AP_W, 2.0 + IO_AP_H)], []
+if MAINBOARD == "alicia_itx":
+    # Not verified against an actual Alicia yet. Connector positions read from a 3D model of the board: u along the rear edge from the
+    # expansion side, h above the top of the PCB. In shield coordinates sx = 173.575 - u and sy = h + 5.81.
+    def _a(u, h):
+        return 173.575 - u, h + 5.81
+    _hd = _a(155.1, 25.3)                       # HD15 (RGB) above two PS/2, one stacked connector
+    _db = [_a(122.4, 6.4), _a(122.4, 22.3)]     # two DB9, stacked
+    IO_RECTS = [(_hd[0] - 9.0, _hd[1] - 5.0, _hd[0] + 9.0, _hd[1] + 5.0)]
+    IO_RECTS += [(c[0] - 10.0, c[1] - 5.75, c[0] + 10.0, c[1] + 5.75) for c in _db]
+    IO_RECTS.append((_a(77.1, 0)[0], _a(0, -0.3)[1], _a(14.2, 0)[0], _a(0, 7.9)[1]))      # PCMCIA
+    IO_CIRCLES = [(*_a(163.7, 6.5), 13.5), (*_a(146.4, 6.5), 13.5)]                       # PS/2 keyboard and mouse
+    IO_CIRCLES += [(*_a(98.7, 6.45), 11.0), (*_a(84.9, 6.45), 11.0)]                      # audio right and left
+    IO_CIRCLES += [(c[0] + dx, c[1], 3.2) for c in [_hd] + _db for dx in (-12.5, 12.5)]   # jack screws
 IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
 IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
 VENT_X0, VENT_X1 = 10.0, min(64.0, IO_X_MIN - 2.0)       # exhaust vents, kept clear of the I/O cut-outs

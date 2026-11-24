@@ -2,8 +2,11 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
-## Unreleased
+## v0.26 - Alicia 1200 added, VGA cut-out off by default
 
+- `mainboard=alicia_itx` is available. The rear panel gets cut-outs for RGB, keyboard, mouse, two joystick ports, audio and PCMCIA, and no Zorro slots. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. The cut-outs are plain rectangles and round holes for now.
+- `back_port_vga_enable` is now false by default. The cut-out is for a panel connector from a scan doubler, which most builds do not have. Set it to true to get the rear panel of v0.25.
+- With the default configuration only the rear panel changes. `out/vga_test_gauge.step` is no longer in `out/`, the script writes it when the VGA cut-out is enabled.
 - `src/render.py` draws the line drawings and the shaded picture in the README from the model, for any configuration.
 
 ## v0.25 - VGA recess set from the test gauge

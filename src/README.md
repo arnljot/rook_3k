@@ -26,7 +26,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 
 | Key | Default | Meaning |
 |---|---|---|
-| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` is planned. |
+| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` has I/O cut-outs for the Alicia 1200 and no Zorro slots. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. |
 | `rook_height` | 227 | Outer height without the foot. |
 | `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
 | `rook_width` | 117 | Outer width. |
@@ -47,8 +47,8 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | `floppy_mount_hole_height` | 5 | Height of the mounting holes above the bottom plate of the drive. |
 | `zorro_slot_1`, `zorro_slot_2` | open, open | Slot 1 is the lower one. `open` is an opening with a lip and a blanking cover, `closed` is solid panel, `custom` is solid panel with your own cut-outs, see below. |
 | `ssd_mount_enable` | false | Four ears on the inside of the left side panel for a 2.5" SSD, above the floppy shelf. The drive is screwed through the ears into its side holes with M3 x 6, so nothing shows on the outside. Mount it while the side panel is off the case. |
-| `back_port_vga_enable` | true | Cut-out for a DE-15 panel connector. |
-| `back_port_vga_rim_thickness` | 0.8 | Material left in the recess behind the VGA cut-out, 0.8 to 1.2. `out/vga_test_gauge.step` has all three steps to try a connector against. |
+| `back_port_vga_enable` | false | Cut-out for a DE-15 panel connector, for example from an Indivision scan doubler. |
+| `back_port_vga_rim_thickness` | 0.8 | Material left in the recess behind the VGA cut-out, 0.8 to 1.2. With the cut-out enabled, `out/vga_test_gauge.step` is written with all three steps to try a connector against. |
 | `back_port_dc_enable`, `back_port_dc_diameter` | true, 8.1 | Hole for the DC panel jack. |
 | `heatinsert_diameter`, `heatinsert_depth`, `heatinsert_wall_thickness` | 4, 4.5, 1.6 | Heat-set insert holes and the minimum wall around them. |
 
