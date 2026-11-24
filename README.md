@@ -77,7 +77,9 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 
 ## Trivia
 
-The rook comes from a game where the number of possible games is close to endless, and where legend has the inventor ask for one grain on the first square of the board, two on the second, four on the third and so on. The case has a little of the same. As of v0.24, the choice of mainboard, Zorro slots, buttons, LED windows, foot, front styling, badge recess, floppy drive, rear ports and SSD mount gives 57,600 different cases. That is before any change to the height, width and depth, which are free as well.
+The Rook 3K name has three inspirations. Two are superior, beautiful and legendary cases, the Amiga 3000 and the Checkmate 1500 Plus. The third is a game where the number of possible games is close to endless, and where legend has the inventor ask for one grain on the first square of the board, two on the second, four on the third and so on.
+
+The case has a little of the same. As of v0.24, the choice of mainboard, Zorro slots, buttons, LED windows, foot, front styling, badge recess, floppy drive, rear ports and SSD mount gives 57,600 different cases. That is before any change to the height, width and depth, which are free as well.
 
 ## Credits
 
