@@ -33,20 +33,26 @@ RY_M = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]], float)     # -X (left) down 
 RY_P = np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], float)     # +X (right) down on the plate
 I3 = np.eye(3)
 
+RX_F = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]], float)    # upside down
+
+# How each kind of part lies on the plate, and the order of the plates
+ORIENT = {"front_panel": RX_M, "u_bracket": RY_P, "side_panel_left": RY_M, "rear_panel": RX_M, "foot": I3,
+          "button_power": RX_P, "button_reset": RX_P, "zorro_cover": RX_M, "foot_pad": RX_F, "tpu_pad": I3}
+# Small parts of the same kind and material share a plate
+PLATE_OF = {"button_power": "buttons", "button_reset": "buttons"}
+ORDER = ["front_panel", "u_bracket", "side_panel_left", "rear_panel", "foot", "foot_pad", "tpu_pad", "buttons", "zorro_cover"]
+
+d.check_clearances()
+_plates = {}
+for _name, (_fn, _col) in d.PARTS.items():
+    _base = d.base_name(_name)
+    _plates.setdefault(PLATE_OF.get(_base, _base), []).append((_name, _fn(), ORIENT[_base]))
 # (plate name, [(part name, shape, rotation), ...])
-PLATES = [
-    ("front_panel", [("front_panel", d.front_panel(), RX_M)]),
-    ("u_bracket", [("u_bracket", d.u_bracket(), RY_P)]),
-    ("side_panel_left", [("side_panel_left", d.side_panel(), RY_M)]),
-    ("rear_panel", [("rear_panel", d.rear_panel(), RX_M)]),
-    ("foot", [("foot", d.foot(), I3)]),
-    ("button_power", [("button_power", d.button(0), RX_P)]),
-    ("button_reset", [("button_reset", d.button(1), RX_P)]),
-]
-if d.ZORRO:
-    PLATES.append(("zorro_cover x2", [("zorro_cover_1", d.zorro_cover(0), RX_M), ("zorro_cover_2", d.zorro_cover(1), RX_M)]))
+PLATES = [(k if len(_plates[k]) == 1 or k == "buttons" else f"{k} x{len(_plates[k])}", _plates[k]) for k in ORDER if k in _plates]
 if d.FLOPPY:
     PLATES.append(("floppy_test_gauge", [("floppy_test_gauge", d.floppy_test_gauge(), I3)]))
+if d.CFG["back_port_vga_enable"]:
+    PLATES.append(("vga_test_gauge", [("vga_test_gauge", d.vga_test_gauge(), RX_P)]))
 
 
 def mesh(shape, R):

@@ -1,8 +1,14 @@
 # Rook 3K configuration
 #
-# Read by src/rook3k.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
+# Read by src/denise_itx_case.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
 # All dimensions are in millimetres. A key that is left out or left empty keeps its default.
 # The values below are the defaults.
+
+# --- Mainboard -----------------------------------------------------------------
+# denise_itx  DeniseITX, with its I/O cut-outs built into the rear panel and two Zorro slots.
+# pc_itx      Any Mini-ITX board: a standard ATX aperture for the loose I/O shield. No Zorro slots. Not test printed.
+# alicia_itx  Planned, not available yet.
+mainboard=denise_itx
 
 # --- Case size ---------------------------------------------------------------
 # Outer height (without the foot), depth and width of the case.
@@ -18,11 +24,20 @@ rook_width=117
 # Corner radius seen from the front, 0.5 to 6.
 rook_corner_radius=4
 
-# --- Foot ---------------------------------------------------------------------
-# The foot is a stack of horizontal grills. Its height is grills x height + (grills - 1) x gap.
+# --- Bottom -------------------------------------------------------------------
+# foot_grill  One foot under the whole case, built as a stack of horizontal grills.
+# foot_pads   Four separate round feet, each with a recess for a TPU pad. The pads are generated as well.
+# none        Nothing under the case, and no screw holes for a foot.
+bottom=foot_grill
+
+# Grill foot. Its height is grills x height + (grills - 1) x gap.
 rook_foot_grill_height=3
 rook_foot_grill_gap=2.5
 rook_foot_grills=3
+
+# Feet with pads. Diameter 12 to 20.
+bottom_pad_height=10
+bottom_pad_diameter=18
 
 # --- Front panel ----------------------------------------------------------------
 # The recessed chamfer field with the flat groove. false gives a flat front.
@@ -34,7 +49,25 @@ deco_groove_enable=true
 # Recess for a 25 x 25 mm case badge.
 pc_badge_recess_enable=true
 
-# The two LED windows. The defaults fit 2 x 5 mm rectangular LEDs.
+# Power and reset buttons. Front buttons sit in a pocket in the front panel and press MX keyboard switches
+# behind it. Each button is placed on its own.
+# button_power:
+#   front       Power button in the front.
+#   front_wide  One tall power button that fills the front pocket. Needs button_reset=back or none.
+#   back        Planned, not available yet.
+#   back_wide   Planned, not available yet. Needs button_reset=front or none.
+#   none        No power button. Gives a warning, the DeniseITX needs a pulse on its power input to turn on.
+# button_reset:
+#   front       Reset button in the front.
+#   back        Planned, not available yet.
+#   none        No reset button.
+# With no button in the front there is no pocket and no switch plate, and the case can be 20 mm shallower.
+button_power=front
+button_reset=front
+
+# The two LED windows, power at the top and drive below it. The defaults fit 2 x 5 mm rectangular LEDs.
+led_power_enable=true
+led_drive_enable=true
 led_window_width=2.2
 led_window_length=5
 
@@ -48,8 +81,14 @@ floppy_legacy_enable=true
 floppy_mount_hole_height=5
 
 # --- Rear panel -----------------------------------------------------------------
-# Openings, lips and blanking covers for the two Zorro slots.
-zorro_cutout_enable=true
+# The two Zorro slots, slot 1 at the bottom. Only for mainboard=denise_itx.
+# open    Opening with a lip and a blanking cover, for any Zorro card.
+# closed  Solid panel.
+# custom  Solid panel with your own cut-outs. The script cuts custom1.step or custom2.step, found next to
+#         this file, out of the slot. Draw the cut-outs on out/zorro_slot_template.step, which shows the
+#         60 x 14 mm field and its origin. An optional custom1_add.step or custom2_add.step is added afterwards.
+zorro_slot_1=open
+zorro_slot_2=open
 
 # Cut-out for a DE-15 panel connector, for example from an Indivision.
 back_port_vga_enable=true
@@ -57,6 +96,11 @@ back_port_vga_enable=true
 # Hole for the DC panel jack, and its diameter.
 back_port_dc_enable=true
 back_port_dc_diameter=8.1
+
+# --- Storage ------------------------------------------------------------------
+# Four ears on the inside of the left side panel for a 2.5" SSD, above the floppy shelf. The drive is
+# screwed through the ears into its side holes, so no screws show on the outside. Not test printed.
+ssd_mount_enable=false
 
 # --- Heat-set inserts -----------------------------------------------------------
 # The defaults are for CNC Kitchen M3 x 3.0 inserts. The depth is the depth of the hole,

@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repositor
 
 # key: default. The type of the default decides how the value in config.txt is parsed.
 CONFIG_DEFAULTS = {
+    "mainboard": "denise_itx",
     "rook_height": 227.0,
     "rook_depth": 211.0,
     "rook_width": 117.0,
@@ -30,20 +31,40 @@ CONFIG_DEFAULTS = {
     "rook_foot_grill_height": 3.0,
     "rook_foot_grill_gap": 2.5,
     "rook_foot_grills": 3,
+    "bottom": "foot_grill",
+    "bottom_pad_height": 10.0,
+    "bottom_pad_diameter": 18.0,
+    "ssd_mount_enable": False,
     "chamfer_recess_enable": True,
     "deco_groove_enable": True,
     "pc_badge_recess_enable": True,
+    "button_power": "front",
+    "button_reset": "front",
+    "led_power_enable": True,
+    "led_drive_enable": True,
     "led_window_width": 2.2,
     "led_window_length": 5.0,
     "floppy_legacy_enable": True,
     "floppy_mount_hole_height": 5.0,
-    "zorro_cutout_enable": True,
+    "zorro_slot_1": "open",
+    "zorro_slot_2": "open",
     "back_port_vga_enable": True,
     "back_port_dc_enable": True,
     "back_port_dc_diameter": 8.1,
     "heatinsert_diameter": 4.0,
     "heatinsert_depth": 4.5,
     "heatinsert_wall_thickness": 1.6,
+}
+
+
+# allowed values for the keys that take a word
+CONFIG_CHOICES = {
+    "mainboard": ("denise_itx", "pc_itx", "alicia_itx"),
+    "zorro_slot_1": ("open", "closed", "custom"),
+    "zorro_slot_2": ("open", "closed", "custom"),
+    "button_power": ("front", "front_wide", "back", "back_wide", "none"),
+    "button_reset": ("front", "back", "none"),
+    "bottom": ("foot_grill", "foot_pads", "none"),
 }
 
 
@@ -61,11 +82,12 @@ def load_config():
             config_error("--config needs a file name")
         path = sys.argv[i + 1]
         del sys.argv[i:i + 2]
-    cfg = dict(CONFIG_DEFAULTS)
+    cfg, given = dict(CONFIG_DEFAULTS), set()
+    folder = os.path.dirname(os.path.abspath(path))
     if not os.path.exists(path):
         if explicit:
             config_error(f"{path} not found")
-        return cfg
+        return cfg, given, folder
     with open(path, encoding="utf-8") as f:
         for no, line in enumerate(f, 1):
             line = line.split("#", 1)[0].strip()
@@ -79,6 +101,12 @@ def load_config():
             if val == "":
                 continue                      # empty value keeps the default
             default = CONFIG_DEFAULTS[key]
+            given.add(key)
+            if isinstance(default, str):
+                if val not in CONFIG_CHOICES[key]:
+                    config_error(f"{path} line {no}: {key} must be one of {', '.join(CONFIG_CHOICES[key])}, got '{val}'")
+                cfg[key] = val
+                continue
             try:
                 if isinstance(default, bool):
                     if val.lower() not in ("true", "false"):
@@ -91,13 +119,37 @@ def load_config():
             except ValueError:
                 kind = "true or false" if isinstance(default, bool) else "a number"
                 config_error(f"{path} line {no}: {key} must be {kind}, got '{val}'")
-    return cfg
+    return cfg, given, folder
 
 
-VERSION = "v0.22"
-CFG = load_config()
+VERSION = "v0.23"
+CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
-ZORRO = CFG["zorro_cutout_enable"]
+MAINBOARD = CFG["mainboard"]
+if MAINBOARD == "alicia_itx":
+    config_error("mainboard=alicia_itx is planned but not available yet")
+HAS_ZORRO = MAINBOARD == "denise_itx"
+ZORRO_KEYS = ("zorro_slot_1", "zorro_slot_2")
+for _k in ZORRO_KEYS:
+    if not HAS_ZORRO and _k in CFG_GIVEN and CFG[_k] != "closed":
+        config_error(f"{_k}={CFG[_k]} is not possible, mainboard={MAINBOARD} has no Zorro slots")
+ZORRO_SLOTS = [CFG[k] if HAS_ZORRO else "closed" for k in ZORRO_KEYS]     # open, closed or custom
+ZORRO = "open" in ZORRO_SLOTS                    # at least one opening with lip and blanking cover
+ZORRO_CARDS = [s != "closed" for s in ZORRO_SLOTS]
+POWER, RESET = CFG["button_power"], CFG["button_reset"]
+# a wide power button takes the place of the reset button on the same side
+if POWER == "front_wide" and RESET == "front":
+    config_error("button_power=front_wide needs button_reset=back or none")
+if POWER == "back_wide" and RESET == "back":
+    config_error("button_power=back_wide needs button_reset=front or none")
+for _k, _v in (("button_power", POWER), ("button_reset", RESET)):
+    if "back" in _v:
+        config_error(f"{_k}={_v} is planned but not available yet")
+if POWER == "none":
+    print("warning: button_power=none leaves the case without a power button. The DeniseITX needs a pulse on its "
+          "power input to turn on", file=sys.stderr)
+BOTTOM = CFG["bottom"]
+SSD = CFG["ssd_mount_enable"]
 
 # ---------------------------------------------------------------- parameters
 W = CFG["rook_width"]           # outer width
@@ -150,13 +202,25 @@ MX_TOP = 6.6        # top of the housing to the upper side of the plate
 MX_BELOW = 5.0      # upper side of the plate to the bottom of the housing
 MX_PINS = 3.3
 MX_X = W - T - 0.7 - MX_BODY / 2      # switch centre, as far towards the right wall as possible
-MX_Z = [27.5, 11.5]                   # power, reset. 16 mm between centres
+# buttons in the front panel, from the top of the pocket: (part name, length)
+FRONT_BUTTONS = []
+if POWER == "front":
+    FRONT_BUTTONS.append(("button_power", BTN_PWR_L))
+elif POWER == "front_wide":
+    FRONT_BUTTONS.append(("button_power", BTN_PWR_L + BTN_GAP + BTN_RST_L))
+if RESET == "front":
+    FRONT_BUTTONS.append(("button_reset", BTN_RST_L))
+BTN_LENGTHS = [l for _, l in FRONT_BUTTONS]
+if len(FRONT_BUTTONS) == 2:
+    MX_Z = [27.5, 11.5]               # power, reset. 16 mm between centres
+else:
+    MX_Z = [BADGE_Z + BTN_EDGE + l / 2 for l in BTN_LENGTHS]     # a single switch sits centred behind its button
 FOOT_T = 3.0        # foot of the button behind the front panel
 BOSS_L = 4.0        # boss with a cross socket for the switch stem
 Y_MX_TOP = T_FRONT + FOOT_T + BOSS_L           # top of the housing
 Y_MX_PLATE = Y_MX_TOP + MX_TOP                 # front face of the switch plate
 Y_MX_END = Y_MX_PLATE + MX_BELOW + MX_PINS     # pin tips
-RIB_FRONT_BOTTOM_X1 = MX_X - MX_BODY / 2 - 2.0 # the lower front rib stops here to make room for the switches
+RIB_FRONT_BOTTOM_X1 = (MX_X - MX_BODY / 2 - 2.0) if BTN_LENGTHS else W - T   # the lower front rib stops here to make room for the switches
 # zone reserved for a future SD card opening at the right edge (not modelled, only kept free)
 SD_Z0, SD_Z1 = T + 35.0, T + 115.0
 SD_DEPTH = 26.0     # from the front edge of the mainboard and inwards
@@ -170,14 +234,21 @@ STANDOFF = 6.0
 BOARD_Z0 = 15.0     # Zorro edge of the board above the bottom of the body
 IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O aperture
 IO_BELOW_PCB = 2.24                # edge of the aperture below the underside of the PCB (ATX)
-IO_CENTER_U = 92.2                 # centre of the aperture measured from the Zorro edge ESTIMATE (fitted to the shield holes against a picture of the board)
+IO_CENTER_U = 92.2                 # centre of the aperture measured from the Zorro edge. Fitted to a picture of the board, verified in a test print of the rear panel
 IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # flange of the shield (no longer used, the shield is built into the rear panel)
 # Through cut-outs following the DeniseITX I/O shield layout, in the shield's own coordinates (0..162.75 x 0..48.45)
 IO_RECTS = [(16.1, 5.0, 151.25, 18.6), (16.1, 24.5, 100.75, 38.1)]          # (sx0, sy0, sx1, sy1)
 IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (sx, sy, diameter)
-# Zorro cards: two slots, card planes read from a picture of the board ESTIMATE
+# Zorro cards: two slots, card planes read from a picture of the board and verified in a test print of the rear panel
+if MAINBOARD == "pc_itx":
+    # standard ATX aperture for a loose I/O shield, with a pocket on the inside so the shield can clip to a thin rim
+    IO_RECTS, IO_CIRCLES = [(2.0, 2.0, 2.0 + IO_AP_W, 2.0 + IO_AP_H)], []
+IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
+IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
+VENT_X0, VENT_X1 = 10.0, min(64.0, IO_X_MIN - 2.0)       # exhaust vents, kept clear of the I/O cut-outs
 ZORRO_U = [5.2, 5.2 + 15.24]       # card plane from the lower edge of the mainboard
 ZORRO_OPEN_W = 11.0
+SLOT_FIELD_H = 14.0                # height of the field a custom slot may cut in, centred on the card plane
 ZORRO_X0, ZORRO_X1 = W - 86.0, W - 26.0   # extent of the opening, measured from the right side since the cards hang on the mainboard. 31 and 91 at width 117
 # Lip and blanking cover patterned on a standard PCI blanking cover, narrowed and shortened:
 # a plate against the inside of the rear panel, a tab bent inwards at the end furthest from the mainboard, screw hole 6.45 above the
@@ -244,6 +315,22 @@ RIB = max(8.0, INS_D + 2 * INS_WALL)
 RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
 RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB), (Y_TUBE1 - RIB, Y_TUBE1)]
 PANEL_SCREW_X = [25.0, W - 25.0]
+FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, D - 34.0), (W - 10.0, D - 34.0)]
+# separate feet with TPU pads, as an alternative to the grill foot
+PAD_H, PAD_D = CFG["bottom_pad_height"], CFG["bottom_pad_diameter"]
+PAD_REC, PAD_TPU_T, PAD_EXT = 1.5, 2.5, 2.0     # recess for the TPU pad, pad thickness, hole extension below the insert
+# 2.5" SSD flat against the left side panel, above the floppy shelf and to the left of the drive, connector end up.
+# It sits between four ears on the panel and is screwed through them into its side holes, so nothing shows on the
+# outside. Mount it while the side panel is off the case.
+# Outline and side holes after SFF-8201 as remembered, ESTIMATE until tried against a drive.
+SSD_L, SSD_W, SSD_T = 100.0, 69.85, 7.0
+SSD_HOLE_UP = 3.0                  # side holes above the bottom face of the drive
+SSD_HOLE_Z = (14.0, 90.6)          # side holes from the connector end
+SSD_GAP = 0.25                     # play between the drive and each ear
+SSD_EAR_T, SSD_EAR_W = 3.0, 10.0   # thickness of an ear and its width along the drive
+SSD_Y0 = T_FRONT + 25.0
+SSD_Y1 = SSD_Y0 + SSD_W
+SSD_Z0 = 86.0
 
 
 # ---------------------------------------------------------------- validation
@@ -255,26 +342,41 @@ def validate_config():
     if FLOPPY:
         h_min = max(h_min, BOT_M + TOP_M + 2 * STEEP + LED_TOP_GAP + LED_L + LED_PITCH + 3.5 + SLOT_L)
     # depth: the front edge of the mainboard must sit behind the pins of the power and reset switches
-    d_min = Y_MX_END + 1.6 + PCB + IO_GAP + T_REAR
+    if BTN_LENGTHS:
+        d_min = Y_MX_END + 1.6 + PCB + IO_GAP + T_REAR
+    else:                                              # without switches the PicoPSU overhang sets the limit
+        d_min = T_FRONT + 1.0 + PICO_OVERHANG + PCB + IO_GAP + T_REAR
     # width: front layout, rear panel cut-outs, Zorro card height, and floppy next to the PicoPSU
     w_min = LEFT_M + 2 * CHAMFER_W + GROOVE + BTN_XC + BTN_W / 2 + BTN_EDGE + 2.0
-    w_min = max(w_min, 64.0 + 2.0 + 38.1 - 2.0 - IO_BELOW_PCB + T + STANDOFF)          # vents clear of the I/O cut-outs
-    if ZORRO:
+    io_w = (W - T - STANDOFF) - IO_X_MIN                                               # width taken by the I/O cut-outs
+    w_min = max(w_min, VENT_X0 + 30.0 + 2.0 + io_w + T + STANDOFF)                     # room for 30 mm wide vents
+    if CFG["back_port_vga_enable"]:
+        w_min = max(w_min, VGA_X + VGA_REC_W / 2 + 2.0 + io_w + T + STANDOFF)          # VGA clear of the I/O cut-outs
+    if any(ZORRO_CARDS):
         w_min = max(w_min, T + 74.0 + 1.5 + PCB_T + STANDOFF + T)                       # 74 mm high Zorro card
     if FLOPPY:
         w_min = max(w_min, XC - FD_SLOT_FROM_TOP + FD_H + 4.0 + PICO_H + PCB_T + STANDOFF + T)
     for key, val, low in (("rook_height", HB, h_min), ("rook_depth", D, d_min), ("rook_width", W, w_min)):
         if val < low - eps:
             config_error(f"{key}={val:g} is too small, the minimum with this configuration is {low:.1f}")
-    if D < d_min + 1.0 - eps:
+    if BTN_LENGTHS and D < d_min + 1.0 - eps:
         print(f"warning: rook_depth={D:g} leaves only {D - d_min + 1.6:.1f} mm between the switch pins and the mainboard, "
               f"{d_min + 1.0:.0f} or more is recommended", file=sys.stderr)
     if not 0.5 <= R <= 6.0:
         config_error(f"rook_corner_radius={R:g} must be between 0.5 and 6.0")
-    if FOOT_FINS < 1 or FOOT_FIN_T < 0.8 or FOOT_FIN_GAP < 0:
-        config_error("rook_foot_grills must be at least 1, rook_foot_grill_height at least 0.8 and rook_foot_grill_gap not negative")
-    if FOOT_H < INS_DEPTH + INS_EXT + 1.5 - eps:
-        config_error(f"the foot is {FOOT_H:g} high, it must be at least {INS_DEPTH + INS_EXT + 1.5:g} to hold the heat inserts")
+    if BOTTOM == "foot_grill":
+        if FOOT_FINS < 1 or FOOT_FIN_T < 0.8 or FOOT_FIN_GAP < 0:
+            config_error("rook_foot_grills must be at least 1, rook_foot_grill_height at least 0.8 and rook_foot_grill_gap not negative")
+        if FOOT_H < INS_DEPTH + INS_EXT + 1.5 - eps:
+            config_error(f"the foot is {FOOT_H:g} high, it must be at least {INS_DEPTH + INS_EXT + 1.5:g} to hold the heat inserts")
+    if BOTTOM == "foot_pads":
+        pad_min = INS_DEPTH + PAD_EXT + 1.0 + PAD_REC
+        if PAD_H < pad_min - eps:
+            config_error(f"bottom_pad_height={PAD_H:g} is too low, the minimum with these heat inserts is {pad_min:g}")
+        if not max(12.0, INS_D + 2 * INS_WALL + 4.0) - eps <= PAD_D <= 20.0 + eps:
+            config_error(f"bottom_pad_diameter={PAD_D:g} must be between {max(12.0, INS_D + 2 * INS_WALL + 4.0):g} and 20")
+    if SSD and SSD_Z0 + SSD_L + 25.0 > HB - T + eps:
+        config_error(f"ssd_mount_enable needs rook_height of at least {SSD_Z0 + SSD_L + 25.0 + T:.0f} for the drive and its cable")
     if INS_D < 2.0 or INS_DEPTH < 2.0 or INS_WALL < 0.8:
         config_error("heatinsert_diameter and heatinsert_depth must be at least 2.0 and heatinsert_wall_thickness at least 0.8")
     if INS_DEPTH + 3.0 + 1.5 > T_FRONT + eps:
@@ -329,13 +431,13 @@ def rect_wire(y):
 
 def button_layout():
     # the pocket is open towards the side of the case
-    ph = 2 * BTN_EDGE + BTN_PWR_L + BTN_GAP + BTN_RST_L
+    ph = 2 * BTN_EDGE + sum(BTN_LENGTHS) + BTN_GAP * (len(BTN_LENGTHS) - 1)
     pz1 = BADGE_Z + ph if BTN_LOW else Z_REC1
     pz0 = pz1 - ph
     z = pz1 - BTN_EDGE
     holes = []
-    for l in (BTN_PWR_L, BTN_RST_L):
-        xc = W - BTN_XC if BTN_RIGHT else BTN_XC
+    xc = W - BTN_XC if BTN_RIGHT else BTN_XC
+    for l in BTN_LENGTHS:
         holes.append((xc - BTN_W / 2, xc + BTN_W / 2, z - l, z))
         z -= l + BTN_GAP
     if BTN_RIGHT:
@@ -359,7 +461,7 @@ def button(i):
 
 
 def ref_buttons():
-    return [button(0), button(1)]
+    return [button(i) for i in range(len(BTN_LENGTHS))]
 
 
 def ref_mx():
@@ -390,11 +492,13 @@ def front_panel():
         ex = XC + EJECT_DX
         p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
     # LED windows at the top of the groove
-    for z in Z_LEDS:
-        p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
+    for z, on in zip(Z_LEDS, (CFG["led_power_enable"], CFG["led_drive_enable"])):
+        if on:
+            p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
     # pocket with the power and reset buttons standing on end
-    (px0, px1, pz0, pz1), holes = button_layout()
-    p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pz0, pz1))
+    (px0, px1, pz0, pz1), holes = button_layout() if BTN_LENGTHS else ((W, W, 0, 0), [])
+    if BTN_LENGTHS:
+        p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pz0, pz1))
     for (x0, x1, z0, z1) in holes:
         c = BTN_CLEAR
         p = p.cut(box(x0 - c, x1 + c, -1, T_FRONT + 1, z0 - c, z1 + c))
@@ -447,13 +551,14 @@ def u_bracket():
                     u = u.cut(insert_hole((x, y1, zc), (0, -1, 0), ext=3.0))
     # plate for the two MX switches, with a stiffener along the upper edge
     h = MX_BODY / 2
-    px0, pz1 = MX_X - h - 3.0, MX_Z[0] + h + 2.5
-    plate = box(px0, W - T, Y_MX_PLATE, Y_MX_PLATE + MX_PLATE_T, T, pz1)
-    plate = plate.union(box(px0, W - T, Y_MX_PLATE - 5.0, Y_MX_PLATE + MX_PLATE_T, pz1 - 1.5, pz1))
-    for z in MX_Z:
-        c = MX_CUT / 2
-        plate = plate.cut(box(MX_X - c, MX_X + c, Y_MX_PLATE - 1, Y_MX_PLATE + MX_PLATE_T + 1, z - c, z + c))
-    u = u.union(plate)
+    if MX_Z:
+        px0, pz1 = MX_X - h - 3.0, max(MX_Z) + h + 2.5
+        plate = box(px0, W - T, Y_MX_PLATE, Y_MX_PLATE + MX_PLATE_T, T, pz1)
+        plate = plate.union(box(px0, W - T, Y_MX_PLATE - 5.0, Y_MX_PLATE + MX_PLATE_T, pz1 - 1.5, pz1))
+        for z in MX_Z:
+            c = MX_CUT / 2
+            plate = plate.cut(box(MX_X - c, MX_X + c, Y_MX_PLATE - 1, Y_MX_PLATE + MX_PLATE_T + 1, z - c, z + c))
+        u = u.union(plate)
     # standoffs for the mainboard
     for (uu, vv) in ITX_HOLES:
         y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
@@ -465,12 +570,10 @@ def u_bracket():
         u = u.cut(box(16, W - 15, y, y + 4.0, -1, T + 1))
         y += 9.0
     # holes for the foot screws
-    for (x, yy) in FOOT_SCREWS:
+    for (x, yy) in (FOOT_SCREWS if BOTTOM != "none" else []):
         u = u.cut(cyl((x, yy, -1), (0, 0, 1), CLEAR / 2, T + 2))
     return u
 
-
-FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, D - 34.0), (W - 10.0, D - 34.0)]
 
 
 def side_panel():
@@ -481,6 +584,14 @@ def side_panel():
             s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # pad resting against the end of the rib
             s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
             s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
+    if SSD:
+        # four ears with a screw hole each, in line with the side holes of the drive
+        xh = T + SSD_HOLE_UP
+        for dz in SSD_HOLE_Z:
+            zc = SSD_Z0 + SSD_L - dz
+            for ya in (SSD_Y0 - SSD_GAP - SSD_EAR_T, SSD_Y1 + SSD_GAP):
+                ear = box(T - 0.1, xh + 3.5, ya, ya + SSD_EAR_T, zc - SSD_EAR_W / 2, zc + SSD_EAR_W / 2)
+                s = s.union(ear.cut(cyl((xh, ya - 1, zc), (0, 1, 0), CLEAR / 2, SSD_EAR_T + 2)))
     if not FLOPPY:
         return s
     # shelf the floppy drive rests on and is screwed to, with gussets underneath
@@ -512,6 +623,44 @@ def zorro_planes():
     return [BOARD_Z0 + u for u in ZORRO_U]
 
 
+def zorro_slot_template():
+    """The field a custom slot may cut in, in the coordinates of the custom file: x along the slot towards the
+    mainboard, y up, z from the outside face (0) to the inside face of the rear panel."""
+    return box(0, ZORRO_X1 - ZORRO_X0, 0, SLOT_FIELD_H, 0, T_REAR)
+
+
+def custom_slot(p, i, zp):
+    """Cut custom<n>.step out of the closed slot, and add custom<n>_add.step if it exists."""
+    n = i + 1
+    length = ZORRO_X1 - ZORRO_X0
+
+    def load(fname, required):
+        path = os.path.join(CFG_DIR, fname)
+        if not os.path.exists(path):
+            if required:
+                config_error(f"zorro_slot_{n}=custom needs {path}. Draw the cut-outs on zorro_slot_template.step from the output folder")
+            return None
+        shape = cq.importers.importStep(path).val()
+        bb = shape.BoundingBox()
+        tol = 0.01
+        if bb.xmin < -tol or bb.xmax > length + tol or bb.ymin < -tol or bb.ymax > SLOT_FIELD_H + tol:
+            config_error(f"{fname} reaches outside the slot field of {length:g} x {SLOT_FIELD_H:g} mm "
+                         f"(x {bb.xmin:.2f}..{bb.xmax:.2f}, y {bb.ymin:.2f}..{bb.ymax:.2f})")
+        if bb.zmin < -20.0 or bb.zmax > 40.0:
+            config_error(f"{fname} reaches more than 20 mm outside or 37 mm inside the rear panel")
+        # file coordinates (x, y, z) -> case coordinates (ZORRO_X0 + x, D - z, card plane - half field + y)
+        return shape.rotate(V(0, 0, 0), V(1, 0, 0), 90).translate(V(ZORRO_X0, D, zp - SLOT_FIELD_H / 2))
+
+    p = p.cut(load(f"custom{n}.step", True))
+    add = load(f"custom{n}_add.step", False)
+    if add is not None:
+        p = p.union(add)
+    solids = p.solids().vals()
+    if len(solids) != 1 or not p.val().isValid():
+        config_error(f"zorro_slot_{n}=custom does not leave the rear panel as one solid body, check custom{n}.step")
+    return p
+
+
 def rear_panel():
     p = rounded(Y_TUBE1, D)
     y0, y1 = Y_TUBE1 - 1, D + 1
@@ -523,8 +672,16 @@ def rear_panel():
     for (sx, sy, dia) in IO_CIRCLES:
         x, z = io_to_panel(sx, sy)
         p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
+    if MAINBOARD == "pc_itx":
+        xa, za = io_to_panel(-0.3, -0.3)
+        xb, zb = io_to_panel(IO_SHIELD_W + 0.3, IO_SHIELD_H + 0.3)
+        p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_RIM, min(za, zb), max(za, zb)))
     # Zorro openings with a lip and an insert hole on the inside
-    for zp in (zorro_planes() if ZORRO else []):
+    for i, zp in enumerate(zorro_planes()):
+        if ZORRO_SLOTS[i] == "custom":
+            p = custom_slot(p, i, zp)
+        if ZORRO_SLOTS[i] != "open":
+            continue
         h = ZORRO_OPEN_W / 2
         p = p.cut(box(ZORRO_X0, ZORRO_X1, y0, y1, zp - h, zp + h))
         p = p.union(box(LIP_X0, LIP_X1, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp + LIP_Z[0], zp + LIP_Z[1]))
@@ -542,7 +699,7 @@ def rear_panel():
     # exhaust vents at the upper left
     z = 125.0
     while z < HB - 16:
-        p = p.cut(box(10, 64, y0, y1, z, z + 3.0))
+        p = p.cut(box(VENT_X0, VENT_X1, y0, y1, z, z + 3.0))
         z += 7.0
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
@@ -594,6 +751,21 @@ def foot():
     return f
 
 
+def foot_pad(i):
+    """One of four separate feet, screwed on from the inside like the grill foot. Printed with the recess up."""
+    x, y = FOOT_SCREWS[i]
+    f = cq.Workplane("XY").circle(PAD_D / 2).extrude(PAD_H).translate((x, y, -PAD_H))
+    f = f.cut(insert_hole((x, y, 0.0), (0, 0, -1), ext=PAD_EXT))
+    return f.cut(cyl((x, y, -PAD_H - 1.0), (0, 0, 1), (PAD_D - 4.0) / 2, 1.0 + PAD_REC))
+
+
+def tpu_pad(i):
+    """Soft pad for the recess under a foot, printed in TPU. Stands 1 mm proud of the foot."""
+    x, y = FOOT_SCREWS[i]
+    return (cq.Workplane("XY").circle((PAD_D - 4.0 - 0.3) / 2).extrude(PAD_TPU_T)
+            .translate((x, y, -PAD_H + PAD_REC - PAD_TPU_T)))
+
+
 # ---------------------------------------------------------------- reference volumes (not printed)
 def ref_board():
     pcb = box(X_PCB, X_PCB + PCB_T, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0, BOARD_Z0 + PCB)
@@ -617,12 +789,35 @@ def ref_zorro():
     # TandemIDE 129 x 74 in slot 1, network card 134 x 53 in slot 2. Centred on the Zorro connector (26..157 from the rear edge, ESTIMATE)
     cards = []
     yc = Y_PCB_REAR - 91.5
-    for zp, (L, h) in zip(zorro_planes(), ((129.0, 74.0), (134.0, 53.0))):
-        cards.append(box(X_PCB - 1.5 - h, X_PCB - 1.5, yc - L / 2, yc + L / 2, zp - 0.8, zp + 0.8))
+    for zp, (L, h), present in zip(zorro_planes(), ((129.0, 74.0), (134.0, 53.0)), ZORRO_CARDS):
+        if present:
+            cards.append(box(X_PCB - 1.5 - h, X_PCB - 1.5, yc - L / 2, yc + L / 2, zp - 0.8, zp + 0.8))
     return cards
 
 
 TEST_UPS = [5.0, 5.5, 6.0]
+
+
+VGA_TEST_LEFT = [1.2, 1.0, 0.8]
+
+
+def vga_test_gauge():
+    """Small plate with three VGA cut-outs, each with a different thickness left in the recess, to find the one
+    the panel connector fits. Printed with the outside face down. The notches at the edge count 1, 2, 3 from the bottom.
+    Local coordinates: x across, y through the plate with the outside face at 0, z up."""
+    w, pitch = VGA_REC_W + 12.0, VGA_REC_H + 5.0
+    p = box(0, w, 0, T_REAR, 0, len(VGA_TEST_LEFT) * pitch + 5.0)
+    xc = (w - 4.0) / 2
+    for i, left in enumerate(VGA_TEST_LEFT):
+        zc = 5.0 + VGA_REC_H / 2 + i * pitch
+        p = p.cut(box(xc - VGA_REC_W / 2, xc + VGA_REC_W / 2, left, T_REAR + 1, zc - VGA_REC_H / 2, zc + VGA_REC_H / 2))
+        p = p.cut(box(xc - 9.0, xc + 9.0, -1, T_REAR + 1, zc - 5.0, zc + 5.0).edges("|Y").fillet(2.0))
+        for dx in (-12.5, 12.5):
+            p = p.cut(cyl((xc + dx, -1, zc), (0, 1, 0), 1.6, T_REAR + 2))
+        for k in range(i + 1):
+            zn = zc + 3.0 * (k - i / 2.0)
+            p = p.cut(box(w - 2.0, w + 1, -1, T_REAR + 1, zn - 0.8, zn + 0.8))
+    return p
 
 
 def floppy_test_gauge():
@@ -641,32 +836,78 @@ def floppy_test_gauge():
     return p
 
 
-PARTS = {} if not ZORRO else {
-    "zorro_cover_1": (lambda: zorro_cover(0), (0.6, 0.6, 0.6)),
-    "zorro_cover_2": (lambda: zorro_cover(1), (0.6, 0.6, 0.6)),
-}
+def ref_ssd():
+    return box(T, T + SSD_T, SSD_Y0, SSD_Y1, SSD_Z0, SSD_Z0 + SSD_L)
+
+
+def check_clearances():
+    """Test the reference volumes against each other and stop if two of them occupy the same space.
+    Parts that sit on the mainboard are not tested against the mainboard or each other."""
+    pcb, comp = ref_board()
+    items = [("the mainboard", pcb, "board"), ("the component zone above the mainboard", comp, "board"),
+             ("the PicoPSU", ref_picopsu(), "board")]
+    items += [(f"the Zorro card in slot {i + 1}", c, "board") for i, c in zip([i for i, on in enumerate(ZORRO_CARDS) if on], ref_zorro())]
+    if FLOPPY:
+        items.append(("the floppy drive", ref_floppy(), None))
+    if SSD:
+        items.append(("the SSD", ref_ssd(), None))
+    items += [(f"switch {i + 1} behind the buttons", m, None) for i, m in enumerate(ref_mx())]
+    for a in range(len(items)):
+        for b in range(a + 1, len(items)):
+            (na, sa, ga), (nb, sb, gb) = items[a], items[b]
+            if ga is not None and ga == gb:
+                continue
+            common = sa.val().intersect(sb.val())
+            vol = common.Volume() if common.isValid() else 0.0
+            if vol > 1.0:
+                bb = common.BoundingBox()
+                config_error(f"{na} and {nb} collide: they overlap by {bb.xlen:.1f} x {bb.ylen:.1f} x {bb.zlen:.1f} mm")
+
+
+# Parts that are printed more than once. They are exported as one STEP file and laid out as copies in the 3MF.
+MULTI = ("zorro_cover", "foot_pad", "tpu_pad")
+
+
+def base_name(name):
+    head, _, tail = name.rpartition("_")
+    return head if tail.isdigit() and head in MULTI else name
+
+
+PARTS = {}
+for _i, _state in enumerate(ZORRO_SLOTS):
+    if _state == "open":
+        PARTS[f"zorro_cover_{_i + 1}"] = (lambda i=_i: zorro_cover(i), (0.6, 0.6, 0.6))
+for _i, (_name, _len) in enumerate(FRONT_BUTTONS):
+    PARTS[_name] = (lambda i=_i: button(i), (0.9, 0.88, 0.82))
 PARTS.update({
-    "button_power": (lambda: button(0), (0.9, 0.88, 0.82)),
-    "button_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
     "front_panel": (front_panel, (0.85, 0.83, 0.78)),
     "u_bracket": (u_bracket, (0.75, 0.73, 0.68)),
     "side_panel_left": (side_panel, (0.75, 0.73, 0.68)),
     "rear_panel": (rear_panel, (0.45, 0.45, 0.45)),
-    "foot": (foot, (0.45, 0.45, 0.45)),
 })
+if BOTTOM == "foot_grill":
+    PARTS["foot"] = (foot, (0.45, 0.45, 0.45))
+elif BOTTOM == "foot_pads":
+    for _i in range(4):
+        PARTS[f"foot_pad_{_i + 1}"] = (lambda i=_i: foot_pad(i), (0.45, 0.45, 0.45))
+    for _i in range(4):
+        PARTS[f"tpu_pad_{_i + 1}"] = (lambda i=_i: tpu_pad(i), (0.15, 0.15, 0.15))
 
 if __name__ == "__main__":
     # Output directory: first argument, else out/ in the repository root (the parent of src/)
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out")
     os.makedirs(out, exist_ok=True)
+    check_clearances()
     asm = cq.Assembly(name="rook3k")
+    written = set()
     for name, (fn, col) in PARTS.items():
         s = fn()
-        if name == "zorro_cover_1":
-            cq.exporters.export(s, os.path.join(out, "zorro_cover.step"))     # the two covers are identical, print two
-        elif name != "zorro_cover_2":
-            cq.exporters.export(s, os.path.join(out, f"{name}.step"))
+        if base_name(name) not in written:           # identical copies are written once
+            cq.exporters.export(s, os.path.join(out, f"{base_name(name)}.step"))
+            written.add(base_name(name))
         asm.add(s, name=name, color=cq.Color(*col))
+    if HAS_ZORRO:
+        cq.exporters.export(zorro_slot_template(), os.path.join(out, "zorro_slot_template.step"))
     pcb, comp = ref_board()
     asm.add(pcb, name="REF_mainboard", color=cq.Color(0.4, 0.1, 0.4))
     asm.add(comp, name="REF_component_zone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
@@ -678,8 +919,12 @@ if __name__ == "__main__":
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
+    if SSD:
+        asm.add(ref_ssd(), name="REF_ssd", color=cq.Color(0.3, 0.3, 0.35))
     asm.save(os.path.join(out, f"rook3k_{VERSION}.step"))
     if FLOPPY:
         tb = floppy_test_gauge()
         cq.exporters.export(tb, os.path.join(out, "floppy_test_gauge.step"))
+    if CFG["back_port_vga_enable"]:
+        cq.exporters.export(vga_test_gauge(), os.path.join(out, "vga_test_gauge.step"))
     print("ok", out)

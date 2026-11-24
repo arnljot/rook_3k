@@ -2,6 +2,21 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.23 - Mainboard profiles, slot states and more options
+
+- `mainboard` selects the board profile. `denise_itx` is unchanged, `pc_itx` gives a standard ATX aperture with a pocket for a loose I/O shield, `alicia_itx` is reserved.
+- `zorro_slot_1` and `zorro_slot_2` replace `zorro_cutout_enable`. Each slot is `open`, `closed` or `custom`. A custom slot cuts a user supplied STEP file out of the closed panel, and `out/zorro_slot_template.step` shows the field to draw on.
+- `button_power` and `button_reset` place each button on its own: in the front, absent, or for power one wide button. Values for buttons at the back are reserved and not available yet.
+- `led_power_enable` and `led_drive_enable` switch each LED window.
+- `bottom` chooses the grill foot, four feet with TPU pads, or nothing.
+- `ssd_mount_enable` adds four ears on the inside of the left side panel for a 2.5" SSD. The drive is screwed through its side holes, so no screws show on the outside.
+- Clearance check: the reference volumes are tested against each other before the parts are written.
+- The 3MF project puts the two buttons on one plate, and lays out feet and pads as four copies.
+- Test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The VGA recess did not fit.
+- `out/vga_test_gauge.step` is a small plate with three VGA cut-outs that leave 1.2, 1.0 and 0.8 mm in the recess, to find the thickness the panel connector needs. It has its own plate in the 3MF project.
+- The default configuration gives the same parts as v0.22.
+- Not test printed: `pc_itx`, the feet with pads, the SSD mount and custom slots.
+
 ## v0.22 - Configuration file, English names and verified fits
 
 - Default depth increased from 210 to 211 mm, which gives 1 mm more between the switch pins and the mainboard. 210 is still allowed and gives a warning. The U-bracket, the left side panel and the foot change; the front and rear panels are unchanged.
