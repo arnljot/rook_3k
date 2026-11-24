@@ -2,18 +2,23 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
-## Unreleased
+## v0.22 - Configuration file, English names and verified fits
 
+- Default depth increased from 210 to 211 mm, which gives 1 mm more between the switch pins and the mainboard. 210 is still allowed and gives a warning. The U-bracket, the left side panel and the foot change; the front and rear panels are unchanged.
+- Test print of the U-bracket verified the MX switch plate and the four mainboard mounting holes.
+- Code, comments, part names and file names are now in English. The model script is `src/rook3k.py`, the assembly is `out/rook3k_v0.22.step` and the Bambu Studio project is `rook3k_v0.22.3mf`. Earlier versions in the history are in Norwegian.
+- The two identical Zorro blanking covers are exported as one file, `zorro_cover.step`.
+- make_3mf.py takes the version from the model when none is given.
+- Renders are regenerated with fixed file names, so the README links stay valid between versions.
 - `config.txt` added and read by both scripts: case size with minimum checks, corner radius, foot grills, and switches for the chamfer recess, badge recess, legacy floppy, Zorro cut-outs, VGA and DC ports, plus LED window and heat-set insert dimensions.
-- Floppy mounting holes verified with the test gauge against a Chinon FZ-354 without face plate. Hole height corrected from 5.75 to 5.0 mm in the model. The files in `out/` are still the v0.21 exports and do not have this correction yet.
+- Floppy mounting holes verified with the test gauge against a Chinon FZ-354 without face plate. Hole height corrected from 5.75 to 5.0 mm in the model.
 - Zorro openings and lips are positioned from the right side, so they follow the mainboard when the width changes.
 - README has a printing section: designed for the Bambu Lab H2D, with part sizes and an assessment for 254 mm class printers.
 - STL exports removed; the model script no longer writes them.
 - Scripts moved to `src/`, with a README on how to run them. Both take an optional output directory.
 - STEP files and renders moved to `out/`, which is where the model script now writes by default. The 3MF project stays in the repository root.
-- make_3mf.py names its output `DeniseITX_kabinett_<version>.3mf`.
 - Logo added: a chess rook with circuit board traces, as mark, lockup and badge.
-- The project is named Rook 3K. File names keep the `DeniseITX_` prefix for now.
+- The project is named Rook 3K.
 - Source location set to https://github.com/arnljot/rook_3k.
 - Licensed under CERN-OHL-S-2.0. Copyright and licence notices added to README and scripts.
 

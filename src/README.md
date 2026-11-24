@@ -6,19 +6,19 @@ Both scripts are run from the repository root. They need Python 3 with [CadQuery
 pip install cadquery numpy
 ```
 
-## denise_itx_case.py
+## rook3k.py
 
 The parametric model. Running it writes one STEP file per part, the test gauge for the floppy mounting holes, and the full assembly with reference volumes for the mainboard, floppy drive, PicoPSU and Zorro cards.
 
 ```bash
-python src/denise_itx_case.py [output_dir]
+python src/rook3k.py [output_dir]
 ```
 
 | Argument | Default | Meaning |
 |---|---|---|
 | `output_dir` | `out/` in the repository root | Where the STEP files are written. Existing files with the same names are overwritten. |
 
-The options most people will want to change are in `config.txt`, described below. All other dimensions are constants near the top of the file, in millimetres. Dimensions marked `ESTIMAT` in the comments are estimates that have not yet been checked against the hardware.
+The options most people will want to change are in `config.txt`, described below. All other dimensions are constants near the top of the file, in millimetres. Dimensions marked `ESTIMATE` in the comments have not yet been checked against the hardware.
 
 ## config.txt
 
@@ -27,7 +27,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | Key | Default | Meaning |
 |---|---|---|
 | `rook_height` | 227 | Outer height without the foot. |
-| `rook_depth` | 210 | Outer depth. |
+| `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
 | `rook_width` | 117 | Outer width. |
 | `rook_corner_radius` | 4 | Corner radius seen from the front, 0.5 to 6. |
 | `rook_foot_grill_height` | 3 | Height of each grill in the foot. |
@@ -50,15 +50,15 @@ The minimums come from clearances calculated in the model. Only the default size
 
 ## make_3mf.py
 
-Writes a Bambu Studio project with one build plate per part, each part oriented for printing. It imports `denise_itx_case.py` and builds the parts itself, so the STEP files are not needed.
+Writes a Bambu Studio project with one build plate per part, each part oriented for printing. It imports `rook3k.py` and builds the parts itself, so the STEP files are not needed.
 
 ```bash
-python src/make_3mf.py <version> [template.3mf] [output_dir]
+python src/make_3mf.py [version] [template.3mf] [output_dir]
 ```
 
 | Argument | Default | Meaning |
 |---|---|---|
-| `version` | `vX` | Label used in the file name, for example `v0.21` gives `DeniseITX_kabinett_v0.21.3mf`. |
+| `version` | the version of the model | Label used in the file name, for example `v0.22` gives `rook3k_v0.22.3mf`. |
 | `template.3mf` | `bambu_template.3mf` in the repository root | A project saved from your own Bambu Studio. Printer, filament and process settings and the bed size are taken from it. |
 | `output_dir` | the repository root | Where the project file is written. |
 

@@ -1,19 +1,19 @@
 # SPDX-License-Identifier: CERN-OHL-S-2.0
 # Copyright (C) 2026 Arnljot Arntsen
-"""Lager en Bambu Studio-prosjektfil (.3mf) med en byggeplate per del, ferdig orientert for utskrift.
-Bambu Studio laster bare plateinndelingen naar filen har prosjektinnstillinger, saa de hentes fra et
-prosjekt lagret i Bambu Studio (bambu_template.3mf).
-Usage: python src/make_3mf.py <version> [template.3mf] [output_dir]
-  version      label used in the file name, e.g. v0.21
+"""Writes a Bambu Studio project (.3mf) with one build plate per part, oriented for printing.
+Bambu Studio only loads the plate layout when the file carries project settings, so these are taken from a
+project saved in Bambu Studio (bambu_template.3mf).
+Usage: python src/make_3mf.py [version] [template.3mf] [output_dir]
+  version      label used in the file name; default: the version of the model, e.g. v0.22
   template.3mf project saved from Bambu Studio; default bambu_template.3mf in the repository root
   output_dir   default: the repository root
 Options are read from config.txt in the repository root, or from the file given with --config <file>."""
 import os, sys, zipfile, datetime, math
 import numpy as np
 import cadquery as cq
-import denise_itx_case as d
+import rook3k as d
 
-VER = sys.argv[1] if len(sys.argv) > 1 else "vX"
+VER = sys.argv[1] if len(sys.argv) > 1 else d.VERSION
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repository root, the parent of src/
 TEMPLATE = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, "bambu_template.3mf")
 OUT_DIR = sys.argv[3] if len(sys.argv) > 3 else ROOT
@@ -23,30 +23,30 @@ T_FILES = {n: _t.read(n) for n in ("Metadata/project_settings.config", "Metadata
 _ps = json.loads(T_FILES["Metadata/project_settings.config"])
 _area = [tuple(float(v) for v in p.split("x")) for p in _ps["printable_area"]]
 APP = re.search(r'<metadata name="Application">([^<]*)<', _t.read("3D/3dmodel.model").decode()).group(1)
-print("mal:", _ps.get("printer_settings_id"), _ps["printable_area"], APP)
-BED_X, BED_Y = max(a[0] for a in _area), max(a[1] for a in _area)   # fra malen
-STRIDE_X, STRIDE_Y = BED_X * 1.2, BED_Y * 1.2   # Bambu Studio legger platene i rutenett med 20 % mellomrom
+print("template:", _ps.get("printer_settings_id"), _ps["printable_area"], APP)
+BED_X, BED_Y = max(a[0] for a in _area), max(a[1] for a in _area)   # from the template
+STRIDE_X, STRIDE_Y = BED_X * 1.2, BED_Y * 1.2   # Bambu Studio lays the plates out in a grid with 20 % spacing
 
-RX_M = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]], float)     # +Y (bak) ned mot plata
-RX_P = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], float)     # -Y (front) ned mot plata
-RY_M = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]], float)     # -X (venstre) ned mot plata
-RY_P = np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], float)     # +X (hoyre) ned mot plata
+RX_M = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]], float)     # +Y (rear) down on the plate
+RX_P = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], float)     # -Y (front) down on the plate
+RY_M = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]], float)     # -X (left) down on the plate
+RY_P = np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]], float)     # +X (right) down on the plate
 I3 = np.eye(3)
 
-# (platenavn, [(delnavn, shape, rotasjon), ...])
+# (plate name, [(part name, shape, rotation), ...])
 PLATES = [
-    ("frontpanel", [("frontpanel", d.front_panel(), RX_M)]),
-    ("u_brakett", [("u_brakett", d.u_bracket(), RY_P)]),
-    ("sidepanel_venstre", [("sidepanel_venstre", d.side_panel(), RY_M)]),
-    ("bakpanel", [("bakpanel", d.rear_panel(), RX_M)]),
-    ("fot", [("fot", d.foot(), I3)]),
-    ("knapp_power", [("knapp_power", d.button(0), RX_P)]),
-    ("knapp_reset", [("knapp_reset", d.button(1), RX_P)]),
+    ("front_panel", [("front_panel", d.front_panel(), RX_M)]),
+    ("u_bracket", [("u_bracket", d.u_bracket(), RY_P)]),
+    ("side_panel_left", [("side_panel_left", d.side_panel(), RY_M)]),
+    ("rear_panel", [("rear_panel", d.rear_panel(), RX_M)]),
+    ("foot", [("foot", d.foot(), I3)]),
+    ("button_power", [("button_power", d.button(0), RX_P)]),
+    ("button_reset", [("button_reset", d.button(1), RX_P)]),
 ]
 if d.ZORRO:
-    PLATES.append(("zorro_blindlokk x2", [("zorro_blindlokk_1", d.zorro_cover(0), RX_M), ("zorro_blindlokk_2", d.zorro_cover(1), RX_M)]))
+    PLATES.append(("zorro_cover x2", [("zorro_cover_1", d.zorro_cover(0), RX_M), ("zorro_cover_2", d.zorro_cover(1), RX_M)]))
 if d.FLOPPY:
-    PLATES.append(("testbit_floppyhull", [("testbit_floppyhull", d.floppy_testbit(), I3)]))
+    PLATES.append(("floppy_test_gauge", [("floppy_test_gauge", d.floppy_test_gauge(), I3)]))
 
 
 def mesh(shape, R):
@@ -67,7 +67,7 @@ for pi, (pname, parts) in enumerate(PLATES):
     for k, (name, shape, R) in enumerate(parts):
         v, t = mesh(shape, R)
         mn, mx = v.min(0), v.max(0)
-        v = v - [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2]]      # sentrert i XY, staar paa Z = 0
+        v = v - [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2]]      # centred in XY, standing on Z = 0
         mid, wid = oid + 1, oid + 2
         oid += 2
         vx = "".join(f'<vertex x="{a:.5f}" y="{b:.5f}" z="{c:.5f}"/>' for a, b, c in v)
@@ -89,7 +89,7 @@ for pi, (pname, parts) in enumerate(PLATES):
       <metadata key="instance_id" value="0"/>
       <metadata key="identify_id" value="{100 + wid}"/>
     </model_instance>''')
-        print(f"plate {pi+1} {name}: {len(v)} punkter, {len(t)} trekanter, {mx[0]-mn[0]:.1f} x {mx[1]-mn[1]:.1f} x {mx[2]-mn[2]:.1f}")
+        print(f"plate {pi+1} {name}: {len(v)} points, {len(t)} triangles, {mx[0]-mn[0]:.1f} x {mx[1]-mn[1]:.1f} x {mx[2]-mn[2]:.1f}")
         assert mx[0] - mn[0] < BED_X and mx[1] - mn[1] < BED_Y, name
     cfg_plate.append(f'''  <plate>
     <metadata key="plater_id" value="{pi + 1}"/>
@@ -105,7 +105,7 @@ model = f'''<?xml version="1.0" encoding="UTF-8"?>
  <metadata name="BambuStudio:3mfVersion">1</metadata>
  <metadata name="CreationDate">{today}</metadata>
  <metadata name="ModificationDate">{today}</metadata>
- <metadata name="Title">DeniseITX kabinett {VER}</metadata>
+ <metadata name="Title">Rook 3K {VER}</metadata>
  <resources>
 {chr(10).join(objs)}
  </resources>
@@ -128,7 +128,7 @@ rels = '''<?xml version="1.0" encoding="UTF-8"?>
  <Relationship Target="/3D/3dmodel.model" Id="rel-1" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>
 </Relationships>
 '''
-out = os.path.join(OUT_DIR, f"DeniseITX_kabinett_{VER}.3mf")
+out = os.path.join(OUT_DIR, f"rook3k_{VER}.3mf")
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("[Content_Types].xml", ctypes)
     z.writestr("_rels/.rels", rels)
@@ -136,4 +136,4 @@ with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     z.writestr("Metadata/model_settings.config", config)
     for n, b in T_FILES.items():
         z.writestr(n, b)
-print("skrev", out)
+print("wrote", out)

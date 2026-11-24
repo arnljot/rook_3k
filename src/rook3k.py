@@ -1,17 +1,18 @@
 # SPDX-License-Identifier: CERN-OHL-S-2.0
 # Copyright (C) 2026 Arnljot Arntsen
 """
-Denise ITX staaende kabinett, konsept v0.21 (CadQuery).
+Rook 3K, an upright 3D-printable case for the DeniseITX Mini-ITX mainboard (CadQuery).
 
-Koordinater: X mot hoyre sett forfra, Y bakover (front = 0), Z opp (kabinettkropp bunn = 0).
-Hovedkortet staar paa hoykant paa hoyre vegg, komponentsiden mot venstre,
-portene bak og Zorro-slottene nederst.
+Coordinates: X to the right seen from the front, Y towards the rear (front = 0), Z up (bottom of the case body = 0).
+The mainboard stands on edge on the right wall with the component side facing left,
+the ports at the rear and the Zorro slots at the bottom.
 
-Run:  python src/denise_itx_case.py [output_dir]
+Run:  python src/rook3k.py [output_dir]
       Writes one STEP file per part plus the assembly. output_dir defaults to out/ in the repository root.
       Options are read from config.txt in the repository root, or from the file given with --config <file>.
-Alle maal i mm. Maal merket ESTIMAT maa kontrolleres med skyvelaer.
+All dimensions in mm. Dimensions marked ESTIMATE have not been checked against the hardware.
 """
+import math
 import os
 import sys
 import cadquery as cq
@@ -23,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repositor
 # key: default. The type of the default decides how the value in config.txt is parsed.
 CONFIG_DEFAULTS = {
     "rook_height": 227.0,
-    "rook_depth": 210.0,
+    "rook_depth": 211.0,
     "rook_width": 117.0,
     "rook_corner_radius": 4.0,
     "rook_foot_grill_height": 3.0,
@@ -93,149 +94,150 @@ def load_config():
     return cfg
 
 
+VERSION = "v0.22"
 CFG = load_config()
 FLOPPY = CFG["floppy_legacy_enable"]
 ZORRO = CFG["zorro_cutout_enable"]
 
-# ---------------------------------------------------------------- parametre
-W = CFG["rook_width"]           # utvendig bredde
-D = CFG["rook_depth"]           # utvendig dybde (se LESMEG: 181 gaar ikke med 10 mm chamfer)
-HB = CFG["rook_height"]         # hoyde kabinettkropp uten fot
-R = CFG["rook_corner_radius"]   # hjorneradius sett forfra
-T = 3.0             # veggtykkelse
-T_REAR = 3.0        # bakpanel
+# ---------------------------------------------------------------- parameters
+W = CFG["rook_width"]           # outer width
+D = CFG["rook_depth"]           # outer depth. 210 is the minimum, 211 adds 1 mm between the switch pins and the mainboard
+HB = CFG["rook_height"]         # height of the case body without the foot
+R = CFG["rook_corner_radius"]   # corner radius seen from the front
+T = 3.0             # wall thickness
+T_REAR = 3.0        # rear panel
 FOOT_FIN_T, FOOT_FIN_GAP, FOOT_FINS = CFG["rook_foot_grill_height"], CFG["rook_foot_grill_gap"], CFG["rook_foot_grills"]
-FOOT_H = FOOT_FINS * FOOT_FIN_T + (FOOT_FINS - 1) * FOOT_FIN_GAP      # fot, 14,0 med standardverdiene
+FOOT_H = FOOT_FINS * FOOT_FIN_T + (FOOT_FINS - 1) * FOOT_FIN_GAP      # foot, 14.0 with the default values
 FOOT_INSET = 4.0
 
-# front (Amiga 3000 rotert 90 grader)
-REC = 10.0          # dybde chamfer
-FLOOR = 2.5         # gods bak sporet
+# front (Amiga 3000 rotated 90 degrees)
+REC = 10.0          # depth of the chamfer
+FLOOR = 2.5         # material behind the groove
 T_FRONT = REC + FLOOR
-CHAMFER_W = 20.3    # bredde paa skraa flate fra hver side
-SIDE_M = (W - 14.0 - 2 * CHAMFER_W) / 2   # flat kant venstre/hoyre naar feltet er sentrert
-LEFT_M = 22.0       # flat kant til venstre for chamferfeltet. Sett lik TOP_M for felt trukket mot venstre
-BTN_RIGHT = True   # knapper i hoyre kant i stedet for venstre
-BADGE_RIGHT = True # badge nede til hoyre i stedet for venstre
-TOP_M = 22.0        # flat kant topp
-BOT_M = 45.0        # flat kant bunn
-GROOVE = 14.0       # flatt spor i bunn av chamfer
-STEEP = 4.0         # bredde paa bratt chamfer topp/bunn
-SLOT_L, SLOT_W = 100.0, 8.0          # diskaapning
-EJECT_L, EJECT_W = 21.0, 5.0         # eject-knapp ESTIMAT plassering
-EJECT_DX = 11.0     # eject senter i X relativt til sporets senter ESTIMAT
-EJECT_FROM_TOP = 16.5                # eject senter under ovre ende av diskaapning ESTIMAT
-LED_TOP_GAP = 2.0   # fra toppen av sporet til forste LED
+CHAMFER_W = 20.3    # width of the sloping face from each side
+SIDE_M = (W - 14.0 - 2 * CHAMFER_W) / 2   # flat margin left/right when the field is centred
+LEFT_M = 22.0       # flat margin to the left of the chamfer field. Equal to TOP_M, so the field sits towards the left
+BTN_RIGHT = True   # buttons at the right edge instead of the left
+BADGE_RIGHT = True # badge at the bottom right instead of the left
+TOP_M = 22.0        # flat margin, top
+BOT_M = 45.0        # flat margin, bottom
+GROOVE = 14.0       # flat groove at the bottom of the chamfer
+STEEP = 4.0         # width of the steep chamfer at top and bottom
+SLOT_L, SLOT_W = 100.0, 8.0          # disk slot
+EJECT_L, EJECT_W = 21.0, 5.0         # eject button, position is an ESTIMATE
+EJECT_DX = 11.0     # eject centre in X relative to the centre of the groove ESTIMATE
+EJECT_FROM_TOP = 16.5                # eject centre below the upper end of the disk slot ESTIMATE
+LED_TOP_GAP = 2.0   # from the top of the groove to the first LED
 LED_PITCH = 7.0
-BTN_POCKET_D = 3.0  # fordypning for power/reset i venstre kant
-BTN_W = 7.0         # knappene staar paa hoykant
-BTN_PWR_L, BTN_RST_L = 12.0, 8.0     # gir fordypning like hoy som badge-fordypningen (27)
+BTN_POCKET_D = 3.0  # depth of the pocket for power and reset
+BTN_W = 7.0         # the buttons stand on end
+BTN_PWR_L, BTN_RST_L = 12.0, 8.0     # gives a pocket as tall as the badge recess (27)
 BTN_GAP, BTN_EDGE = 2.0, 2.5
-DECO_W, DECO_D = 1.8, 0.5       # pyntespor
-DECO_END = 1.0                  # sporet stopper saa langt fra chamferens topp- og bunnkant
-BADGE, BADGE_MARGIN, BADGE_D = 25.0, 1.0, 1.0   # fordypning for 25 x 25 pc-badge
-BADGE_X, BADGE_Z = 6.5, 6.5     # fra siden (eller fra knappefordypningen) og fra underkant front
-BTN_LOW = True                  # knappefordypningen nede, underkant paa linje med badge-fordypningen
-BTN_XC = 7.5        # knappenes senter fra venstre side. MX-bryteren maa da staa ca 3,6 mm til hoyre for knappen
-BTN_OUT = 3.5       # knapp stikker ut foran fronten i hvile
+DECO_W, DECO_D = 1.8, 0.5       # decorative groove
+DECO_END = 1.0                  # the groove stops this far from the top and bottom edge of the chamfer
+BADGE, BADGE_MARGIN, BADGE_D = 25.0, 1.0, 1.0   # recess for a 25 x 25 case badge
+BADGE_X, BADGE_Z = 6.5, 6.5     # from the side (or from the button pocket) and from the bottom edge of the front
+BTN_LOW = True                  # button pocket at the bottom, lower edge in line with the badge recess
+BTN_XC = 7.5        # button centre from the side. The MX switch then sits about 3.6 mm further in than the button
+BTN_OUT = 3.5       # the button protrudes this far in front of the panel at rest
 BTN_CLEAR = 0.3
-# MX-brytere bak knappene. Maal etter hukommelsen fra Cherry MX-databladet, kontroller mot faktisk bryter
-MX_BODY = 15.6      # hus, kvadratisk
-MX_CUT = 14.0       # utsnitt i brakettplate
+# MX switches behind the buttons, common MX footprint. Plate cut-out and fit verified in a test print of the U-bracket
+MX_BODY = 15.6      # housing, square
+MX_CUT = 14.0       # cut-out in the switch plate
 MX_PLATE_T = 1.5
-MX_STEM = 3.6       # stamme over hustopp
-MX_TOP = 6.6        # hustopp til overside plate
-MX_BELOW = 5.0      # overside plate til bunn av hus
+MX_STEM = 3.6       # stem above the top of the housing
+MX_TOP = 6.6        # top of the housing to the upper side of the plate
+MX_BELOW = 5.0      # upper side of the plate to the bottom of the housing
 MX_PINS = 3.3
-MX_X = W - T - 0.7 - MX_BODY / 2      # brytersenter, saa langt mot hoyre vegg som mulig
-MX_Z = [27.5, 11.5]                   # power, reset. 16 mm senteravstand
-FOOT_T = 3.0        # knappens fot bak fronten
-BOSS_L = 4.0        # tapp med kryssfeste for bryterstammen
-Y_MX_TOP = T_FRONT + FOOT_T + BOSS_L           # hustopp
-Y_MX_PLATE = Y_MX_TOP + MX_TOP                 # forside brakettplate
-Y_MX_END = Y_MX_PLATE + MX_BELOW + MX_PINS     # pinnespisser
-RIB_FRONT_BOTTOM_X1 = MX_X - MX_BODY / 2 - 2.0 # nedre fremre ribbe stopper her for aa gi plass til bryterne
-# reservert sone for fremtidig SD-kortaapning i hoyre kant (ikke tegnet, bare holdt fri)
+MX_X = W - T - 0.7 - MX_BODY / 2      # switch centre, as far towards the right wall as possible
+MX_Z = [27.5, 11.5]                   # power, reset. 16 mm between centres
+FOOT_T = 3.0        # foot of the button behind the front panel
+BOSS_L = 4.0        # boss with a cross socket for the switch stem
+Y_MX_TOP = T_FRONT + FOOT_T + BOSS_L           # top of the housing
+Y_MX_PLATE = Y_MX_TOP + MX_TOP                 # front face of the switch plate
+Y_MX_END = Y_MX_PLATE + MX_BELOW + MX_PINS     # pin tips
+RIB_FRONT_BOTTOM_X1 = MX_X - MX_BODY / 2 - 2.0 # the lower front rib stops here to make room for the switches
+# zone reserved for a future SD card opening at the right edge (not modelled, only kept free)
 SD_Z0, SD_Z1 = T + 35.0, T + 115.0
-SD_DEPTH = 26.0     # fra forkant hovedkort og innover
-SD_OFFSET = 15.0    # fra undersiden av hovedkortet og ut mot venstre
-LED_W, LED_L = CFG["led_window_width"], CFG["led_window_length"]    # LED-vinduer i sporet
+SD_DEPTH = 26.0     # from the front edge of the mainboard and inwards
+SD_OFFSET = 15.0    # from the underside of the mainboard and out to the left
+LED_W, LED_L = CFG["led_window_width"], CFG["led_window_length"]    # LED windows in the groove
 
-# hovedkort (Mini-ITX 170 x 170)
+# mainboard (Mini-ITX 170 x 170). Mounting holes and standoffs verified in a test print of the U-bracket
 PCB = 170.0
 PCB_T = 1.6
 STANDOFF = 6.0
-BOARD_Z0 = 15.0     # Zorro-kanten av kortet over kroppens bunn
-IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O-aapning
-IO_BELOW_PCB = 2.24                # aapningens kant under PCB-undersiden (ATX)
-IO_CENTER_U = 92.2                 # aapningens senter maalt fra Zorro-kanten ESTIMAT (tilpasset skjoldets hull mot kortbildet)
-IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # skjoldets flens (ikke lenger i bruk, skjoldet er bygd inn i bakpanelet)
-# Gjennomgaaende utsnitt etter DeniseITX I/O-skjoldets utforming, i skjoldets egne koordinater (0..162,75 x 0..48,45)
+BOARD_Z0 = 15.0     # Zorro edge of the board above the bottom of the body
+IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O aperture
+IO_BELOW_PCB = 2.24                # edge of the aperture below the underside of the PCB (ATX)
+IO_CENTER_U = 92.2                 # centre of the aperture measured from the Zorro edge ESTIMATE (fitted to the shield holes against a picture of the board)
+IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # flange of the shield (no longer used, the shield is built into the rear panel)
+# Through cut-outs following the DeniseITX I/O shield layout, in the shield's own coordinates (0..162.75 x 0..48.45)
 IO_RECTS = [(16.1, 5.0, 151.25, 18.6), (16.1, 24.5, 100.75, 38.1)]          # (sx0, sy0, sx1, sy1)
 IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (sx, sy, diameter)
-# Zorro-kort: to slotter, kortplan lest av kortbildet ESTIMAT
-ZORRO_U = [5.2, 5.2 + 15.24]       # kortplan fra hovedkortets nedre kant
+# Zorro cards: two slots, card planes read from a picture of the board ESTIMATE
+ZORRO_U = [5.2, 5.2 + 15.24]       # card plane from the lower edge of the mainboard
 ZORRO_OPEN_W = 11.0
-ZORRO_X0, ZORRO_X1 = W - 86.0, W - 26.0   # aapningens utstrekning, maalt fra hoyre side siden kortene henger paa hovedkortet. 31 og 91 ved bredde 117
-# Leppe og blindlokk etter monsteret til et standard PCI-blindlokk (PCI+cover.3mf), smalnet og kortet ned:
-# plate mot innsiden av bakpanelet, flik boyd innover i enden lengst fra hovedkortet, skruehull 6,45 over platens
-# underside og 1,5 til siden for midten i originalen. Skruen gaar i kortets innskyvingsretning.
-LIP_X0, LIP_X1 = W - 94.1, W - 87.6   # leppa i X. 22,9 og 29,4 ved bredde 117
-LIP_D = 10.2                       # hvor langt leppa staar inn fra bakpanelet
-LIP_Z = (-2.25, 6.25)              # leppa i Z relativt til kortplanet. Resten av bredden er hals paa lokket
-LIP_HOLE_IN = 6.45                 # innsatshull fra bakpanelets innside (som paa standardlokket)
-LIP_HOLE_DZ = 2.0                  # innsatshull relativt til kortplanet
+ZORRO_X0, ZORRO_X1 = W - 86.0, W - 26.0   # extent of the opening, measured from the right side since the cards hang on the mainboard. 31 and 91 at width 117
+# Lip and blanking cover patterned on a standard PCI blanking cover, narrowed and shortened:
+# a plate against the inside of the rear panel, a tab bent inwards at the end furthest from the mainboard, screw hole 6.45 above the
+# underside of the plate and 1.5 off centre in the original. The screw runs in the insertion direction of the card.
+LIP_X0, LIP_X1 = W - 94.1, W - 87.6   # the lip in X. 22.9 and 29.4 at width 117
+LIP_D = 10.2                       # how far the lip stands in from the rear panel
+LIP_Z = (-2.25, 6.25)              # the lip in Z relative to the card plane. The rest of the width is the neck of the cover
+LIP_HOLE_IN = 6.45                 # insert hole from the inside of the rear panel (as on the standard cover)
+LIP_HOLE_DZ = 2.0                  # insert hole relative to the card plane
 COVER_W = 12.5
 COVER_T = 1.5
 COVER_TAB_H = 13.5
-# DC og VGA ligger over Zorro-aapningene, saa det er fritt aa komme til skruene i leppene fra venstre
-DC_X, DC_Z, DC_D = 14.0, 52.0, CFG["back_port_dc_diameter"]   # hals maalt til 7,75
-DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # fordypning paa innsiden og gods som staar igjen. Hals 4,5 lang, mutter 1,88 tykk
-VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, 1.5   # fordypning for panelkontaktens hus, og gods som staar igjen
-VGA_X, VGA_Z = 44.0, 52.0          # DE-15 liggende. Aapning 18 x 10, skruehull 25 fra hverandre ESTIMAT
+# DC and VGA sit above the Zorro openings, so the screws in the lips can be reached from the left
+DC_X, DC_Z, DC_D = 14.0, 52.0, CFG["back_port_dc_diameter"]   # neck measured to 7.75
+DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # recess on the inside and the material left. Neck 4.5 long, nut 1.88 thick
+VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, 1.5   # recess for the housing of the panel connector, and the material left
+VGA_X, VGA_Z = 44.0, 52.0          # DE-15 lying down. Opening 18 x 10, screw holes 25 apart ESTIMATE
 IO_CLEAR = 0.2
-IO_GAP = 1.0        # PCB bakkant til innside bakpanel ESTIMAT
-COMP_H = 14.0       # hoyeste vanlige komponent ESTIMAT
-ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u fra Zorro-kant, v fra bakkant)
+IO_GAP = 1.0        # rear edge of the PCB to the inside of the rear panel ESTIMATE
+COMP_H = 14.0       # tallest ordinary component ESTIMATE
+ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u from the Zorro edge, v from the rear edge)
 
-# floppy standard 3,5"
-FD_W, FD_H, FD_L = 101.6, 25.4, 129.0   # lengde = 21 + 60 + 30 + 18 (maalt med skyvelaer, ikke proevd)
-FD_SLOT_FROM_TOP = 9.0 + 3.3 / 2   # 9 mm fra lokket til disken (maalt), pluss halv disktykkelse
-PICO_H, PICO_T, PICO_W = 36.0, 23.0, 45.0   # PicoPSU over hovedkortet, tykkelse, bredde (maalt)
-PICO_OVERHANG = 2.5      # PicoPSU ut over forkanten av hovedkortet (maalt, ca)
-DOM_H = 49.0             # disk on module paa akseleratorkortet, over hovedkortet (maalt)
+# floppy drive, standard 3.5"
+FD_W, FD_H, FD_L = 101.6, 25.4, 129.0   # length = 21 + 60 + 30 + 18, measured with calipers
+FD_SLOT_FROM_TOP = 9.0 + 3.3 / 2   # 9 mm from the lid to the disk (measured), plus half the thickness of a disk
+PICO_H, PICO_T, PICO_W = 36.0, 23.0, 45.0   # PicoPSU above the mainboard, thickness, width (measured)
+PICO_OVERHANG = 2.5      # PicoPSU overhang past the front edge of the mainboard (measured, approximate)
+DOM_H = 49.0             # disk on module on the accelerator card, above the mainboard (measured)
 
-# skruer M3. Messing varmeinnsatser M3 (blindhull): hull 4,0 i diameter, 4 dypt, minst 1,6 gods rundt
+# M3 screws. Brass heat-set inserts in blind holes. Defaults for CNC Kitchen M3 x 3.0
 INS_D = CFG["heatinsert_diameter"]
-INS_DEPTH = CFG["heatinsert_depth"]     # 0,5 ekstra for plast som presses ned foran innsatsen
+INS_DEPTH = CFG["heatinsert_depth"]     # hole depth, with room in front of the insert for displaced plastic
 INS_WALL = CFG["heatinsert_wall_thickness"]
 INS_BOSS_R = max(4.0, INS_D / 2 + INS_WALL)    # radius of round bosses that hold an insert
-INS_EXT = 4.0       # smalere forlengelse bak innsatsen, saa skruen ikke bunner
-# floppyhylle paa venstre sidepanel
-# Noyaktige hull for drivens sidehull: 21, 81 og 111 fra drivens forkant. M3 x 0,5.
+INS_EXT = 4.0       # narrower extension behind the insert, so the screw does not bottom out
+# floppy shelf on the left side panel
+# Exact holes for the side holes of the drive: 21, 81 and 111 from the front of the drive. M3 x 0.5.
 # Verified with the test gauge against a Chinon FZ-354 without face plate: all three positions fit, hole height 5.0.
 FD_HOLES_Y = [21.0, 81.0, 111.0]
-FD_HOLE_UP = CFG["floppy_mount_hole_height"]   # hullsenter over drivens bunnplate. 5,0 for Chinon FZ-354
-FD_GAP = 0.3                      # luft mellom drivens forkant og baksiden av frontpanelet
+FD_HOLE_UP = CFG["floppy_mount_hole_height"]   # hole centre above the bottom plate of the drive. 5.0 for a Chinon FZ-354
+FD_GAP = 0.3                      # gap between the front of the drive and the back of the front panel
 FD_REAR_HOLE = FD_HOLES_Y[-1]
 SHELF_T = 4.0
-SHELF_Y0, SHELF_Y1 = 1.5, FD_REAR_HOLE + 10.0   # hyllas utstrekning bak fronten
-GUSSET = 15.0                     # smaa trekanter under hylla
+SHELF_Y0, SHELF_Y1 = 1.5, FD_REAR_HOLE + 10.0   # extent of the shelf behind the front panel
+GUSSET = 15.0                     # small gussets under the shelf
 PILOT = 2.6
 CLEAR = 3.4
 
 Y_TUBE0 = T_FRONT
 Y_TUBE1 = D - T_REAR
-X_SPLIT = 4.0       # deling mellom venstre sidepanel og U-brakett
-X_PCB = W - T - STANDOFF - PCB_T      # komponentsiden av PCB
+X_SPLIT = 4.0       # split between the left side panel and the U-bracket
+X_PCB = W - T - STANDOFF - PCB_T      # component side of the PCB
 Y_PCB_REAR = Y_TUBE1 - IO_GAP
 Y_PCB_FRONT = Y_PCB_REAR - PCB
 RIGHT_M = W - LEFT_M - 2 * CHAMFER_W - 14.0
-XC = LEFT_M + CHAMFER_W + 7.0      # senter av sporet og diskaapningen
+XC = LEFT_M + CHAMFER_W + 7.0      # centre of the groove and the disk slot
 Z_REC0, Z_REC1 = BOT_M, HB - TOP_M
 Z_GROOVE1 = Z_REC1 - STEEP
 Z_LEDS = [Z_GROOVE1 - LED_TOP_GAP - LED_L / 2 - i * LED_PITCH for i in range(2)]
-Z_SLOT1 = Z_LEDS[-1] - LED_L / 2 - 3.5      # diskaapning loftet opp under LED-ene
+Z_SLOT1 = Z_LEDS[-1] - LED_L / 2 - 3.5      # disk slot placed just below the LEDs
 ZC_SLOT = Z_SLOT1 - SLOT_L / 2
 
 RIB = max(8.0, INS_D + 2 * INS_WALL)
@@ -264,6 +266,9 @@ def validate_config():
     for key, val, low in (("rook_height", HB, h_min), ("rook_depth", D, d_min), ("rook_width", W, w_min)):
         if val < low - eps:
             config_error(f"{key}={val:g} is too small, the minimum with this configuration is {low:.1f}")
+    if D < d_min + 1.0 - eps:
+        print(f"warning: rook_depth={D:g} leaves only {D - d_min + 1.6:.1f} mm between the switch pins and the mainboard, "
+              f"{d_min + 1.0:.0f} or more is recommended", file=sys.stderr)
     if not 0.5 <= R <= 6.0:
         config_error(f"rook_corner_radius={R:g} must be between 0.5 and 6.0")
     if FOOT_FINS < 1 or FOOT_FIN_T < 0.8 or FOOT_FIN_GAP < 0:
@@ -292,9 +297,9 @@ def validate_config():
 validate_config()
 
 
-# ---------------------------------------------------------------- hjelpere
+# ---------------------------------------------------------------- helpers
 def insert_hole(p, d, ext=INS_EXT):
-    """Hull for M3 varmeinnsats fra flaten i punkt p, innover i retning d."""
+    """Hole for an M3 heat-set insert from the surface at point p, inwards in direction d."""
     p0 = [p[i] - 0.5 * d[i] for i in range(3)]
     h = cq.Solid.makeCylinder(INS_D / 2, INS_DEPTH + 0.5, V(*p0), V(*d))
     return h.fuse(cq.Solid.makeCylinder(1.6, INS_DEPTH + 0.5 + ext, V(*p0), V(*d)))
@@ -323,7 +328,7 @@ def rect_wire(y):
 
 
 def button_layout():
-    # venstre kant, fordypningen aapen ut mot venstre side
+    # the pocket is open towards the side of the case
     ph = 2 * BTN_EDGE + BTN_PWR_L + BTN_GAP + BTN_RST_L
     pz1 = BADGE_Z + ph if BTN_LOW else Z_REC1
     pz0 = pz1 - ph
@@ -339,7 +344,7 @@ def button_layout():
 
 
 def button(i):
-    # knapp med fot og tapp for MX-stamme. Skrives ut staaende paa foten.
+    # button with a foot and a boss for the MX stem. Printed with the front face down.
     (x0, x1, z0, z1) = button_layout()[1][i]
     b = box(x0, x1, -BTN_OUT, T_FRONT, z0, z1)
     lz0 = 1.3 if i == 1 else 0.8
@@ -371,30 +376,29 @@ def ref_sd_zone():
     return box(W - RIGHT_M + 3.0, x1, T_FRONT, Y_PCB_FRONT + SD_DEPTH, SD_Z0, SD_Z1)
 
 
-# ---------------------------------------------------------------- deler
+# ---------------------------------------------------------------- parts
 def front_panel():
     p = rounded(0, T_FRONT)
     if CFG["chamfer_recess_enable"]:
         recess = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True)
         p = p.cut(recess)
     if FLOPPY:
-        # diskaapning i sporet
+        # disk slot in the groove
         p = p.cut(box(XC - SLOT_W / 2, XC + SLOT_W / 2, -1, T_FRONT + 1, ZC_SLOT - SLOT_L / 2, ZC_SLOT + SLOT_L / 2))
-        # eject paa hoyre chamfer, floppy staar med lokket mot venstre
+        # eject on the right chamfer, the drive has its lid towards the left
         ez = Z_SLOT1 - EJECT_FROM_TOP
         ex = XC + EJECT_DX
         p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
-    # LED-vinduer i toppen av sporet
+    # LED windows at the top of the groove
     for z in Z_LEDS:
         p = p.cut(box(XC - LED_W / 2, XC + LED_W / 2, -1, T_FRONT + 1, z - LED_L / 2, z + LED_L / 2))
-    # fordypning med staaende power- og resetknapp i venstre kant
+    # pocket with the power and reset buttons standing on end
     (px0, px1, pz0, pz1), holes = button_layout()
     p = p.cut(box(px0, px1, -1, BTN_POCKET_D, pz0, pz1))
     for (x0, x1, z0, z1) in holes:
         c = BTN_CLEAR
         p = p.cut(box(x0 - c, x1 + c, -1, T_FRONT + 1, z0 - c, z1 + c))
-    # pyntespor midt i venstre chamfer, 0,5 dypt vinkelrett paa flaten
-    import math
+    # decorative groove in the middle of the left chamfer, 0.5 deep perpendicular to the face
     dy = DECO_D * math.hypot(REC, CHAMFER_W) / CHAMFER_W
     gx = LEFT_M + CHAMFER_W / 2 - DECO_W / 2
     shifted = cq.Solid.makeLoft([rect_wire(-1.0), rect_wire(REC)], True).translate(V(0, dy, 0))
@@ -406,14 +410,14 @@ def front_panel():
              .extrude(-T_FRONT).translate((0, -1, 0)))
     if CFG["chamfer_recess_enable"] and CFG["deco_groove_enable"]:
         p = p.cut(cq.Workplane("XY").add(shifted).intersect(strip))
-    # fordypning for pc-badge nede til venstre
+    # recess for the case badge
     bs = BADGE + 2 * BADGE_MARGIN
     bx0 = W - BADGE_X - bs if BADGE_RIGHT else BADGE_X
     if BTN_LOW and BTN_RIGHT and BADGE_RIGHT:
         bx0 = px0 - BADGE_X - bs
     if CFG["pc_badge_recess_enable"]:
         p = p.cut(box(bx0, bx0 + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
-    # pilothull bak for skruer gjennom ribbene i U-braketten
+    # insert holes at the back for the screws through the ribs of the U-bracket
     for (z0, z1) in RIB_Z:
         for x in PANEL_SCREW_X:
             p = p.cut(insert_hole((x, T_FRONT, (z0 + z1) / 2), (0, -1, 0), ext=3.0))
@@ -426,7 +430,7 @@ def _ring():
 
 def u_bracket():
     u = _ring().intersect(box(X_SPLIT, W + 1, 0, D, -1, HB + 1))
-    # ribber i topp og bunn, foran og bak: feste for front, bakpanel og sidepanel
+    # ribs at top and bottom, front and rear: mounting for the front, rear and side panels
     for (y0, y1) in RIB_Y:
         for (z0, z1) in RIB_Z:
             x1 = RIB_FRONT_BOTTOM_X1 if (y0 == Y_TUBE0 and z0 == T) else W - T
@@ -434,14 +438,14 @@ def u_bracket():
     for iy, (y0, y1) in enumerate(RIB_Y):
         for (z0, z1) in RIB_Z:
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
-            # sidepanelskrue inn i ribbeenden
+            # side panel screw into the end of the rib
             u = u.cut(insert_hole((X_SPLIT, yc, zc), (1, 0, 0)))
             for x in PANEL_SCREW_X:
-                if iy == 0:   # front: skrue innenfra gjennom ribben
+                if iy == 0:   # front: screw from the inside through the rib
                     u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB + 2))
-                else:         # bak: varmeinnsats for skrue utenfra gjennom bakpanelet
+                else:         # rear: heat-set insert for a screw from the outside through the rear panel
                     u = u.cut(insert_hole((x, y1, zc), (0, -1, 0), ext=3.0))
-    # brakettplate for de to MX-bryterne, med avstivning langs overkanten
+    # plate for the two MX switches, with a stiffener along the upper edge
     h = MX_BODY / 2
     px0, pz1 = MX_X - h - 3.0, MX_Z[0] + h + 2.5
     plate = box(px0, W - T, Y_MX_PLATE, Y_MX_PLATE + MX_PLATE_T, T, pz1)
@@ -450,17 +454,17 @@ def u_bracket():
         c = MX_CUT / 2
         plate = plate.cut(box(MX_X - c, MX_X + c, Y_MX_PLATE - 1, Y_MX_PLATE + MX_PLATE_T + 1, z - c, z + c))
     u = u.union(plate)
-    # avstandsstykker for hovedkortet
+    # standoffs for the mainboard
     for (uu, vv) in ITX_HOLES:
         y, z = Y_PCB_REAR - vv, BOARD_Z0 + uu
         u = u.union(cyl((W - T - STANDOFF, y, z), (1, 0, 0), INS_BOSS_R, STANDOFF + 0.5))
         u = u.cut(insert_hole((W - T - STANDOFF, y, z), (1, 0, 0), ext=3.0))
-    # luftinntak i bunn, over foten
+    # air intake in the bottom, above the foot
     y = 30.0
     while y < Y_TUBE1 - 20:
         u = u.cut(box(16, W - 15, y, y + 4.0, -1, T + 1))
         y += 9.0
-    # hull for fotskruer
+    # holes for the foot screws
     for (x, yy) in FOOT_SCREWS:
         u = u.cut(cyl((x, yy, -1), (0, 0, 1), CLEAR / 2, T + 2))
     return u
@@ -474,12 +478,12 @@ def side_panel():
     for (y0, y1) in RIB_Y:
         for (z0, z1) in RIB_Z:
             yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
-            s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # anleggspute mot ribbeenden
+            s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # pad resting against the end of the rib
             s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
             s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
     if not FLOPPY:
         return s
-    # hylle som floppyen hviler paa og skrus fast i, med avstivere under
+    # shelf the floppy drive rests on and is screwed to, with gussets underneath
     fb = ref_floppy().val().BoundingBox()
     zt = fb.zmin
     ya, yb = T_FRONT + SHELF_Y0, T_FRONT + SHELF_Y1
@@ -492,13 +496,13 @@ def side_panel():
     for hy in FD_HOLES_Y:
         y = T_FRONT + FD_GAP + hy
         sh = sh.cut(cyl((hx, y, zt - SHELF_T - 1), (0, 0, 1), CLEAR / 2, SHELF_T + 2))
-        sh = sh.cut(cyl((hx, y, zt - SHELF_T - 1), (0, 0, 1), 3.2, 1.0 + 1.8))      # forsenkning for skruehode
+        sh = sh.cut(cyl((hx, y, zt - SHELF_T - 1), (0, 0, 1), 3.2, 1.0 + 1.8))      # counterbore for the screw head
     s = s.union(sh)
     return s
 
 
 def io_to_panel(sx, sy):
-    """Skjoldkoordinat -> (x, z) i kabinettet."""
+    """Shield coordinate -> (x, z) in the case."""
     z = BOARD_Z0 + IO_CENTER_U - (sx - 81.375)
     x = (W - T - STANDOFF) - (sy - 2.0 - IO_BELOW_PCB)
     return x, z
@@ -511,7 +515,7 @@ def zorro_planes():
 def rear_panel():
     p = rounded(Y_TUBE1, D)
     y0, y1 = Y_TUBE1 - 1, D + 1
-    # I/O-utsnittene etter DeniseITX I/O-skjoldet rett i platen
+    # I/O cut-outs following the DeniseITX I/O shield layout, straight in the panel
     for (sx0, sy0, sx1, sy1) in IO_RECTS:
         xa, za = io_to_panel(sx0, sy0)
         xb, zb = io_to_panel(sx1, sy1)
@@ -519,13 +523,13 @@ def rear_panel():
     for (sx, sy, dia) in IO_CIRCLES:
         x, z = io_to_panel(sx, sy)
         p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
-    # Zorro-aapninger med leppe og innsatshull paa innsiden
+    # Zorro openings with a lip and an insert hole on the inside
     for zp in (zorro_planes() if ZORRO else []):
         h = ZORRO_OPEN_W / 2
         p = p.cut(box(ZORRO_X0, ZORRO_X1, y0, y1, zp - h, zp + h))
         p = p.union(box(LIP_X0, LIP_X1, Y_TUBE1 - LIP_D, Y_TUBE1 + 0.1, zp + LIP_Z[0], zp + LIP_Z[1]))
         p = p.cut(insert_hole((LIP_X0, Y_TUBE1 - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), ext=1.0))
-    # DC-inntak og VGA paa hoykant i venstre soyle
+    # DC jack and VGA to the left of the mainboard
     if CFG["back_port_dc_enable"]:
         p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), DC_D / 2, T_REAR + 2))
         p = p.cut(cyl((DC_X, y0, DC_Z), (0, 1, 0), max(DC_REC_D, DC_D + 4.0) / 2, 1 + T_REAR - DC_REC_LEFT))
@@ -535,7 +539,7 @@ def rear_panel():
         p = p.cut(box(VGA_X - 9.0, VGA_X + 9.0, y0, y1, VGA_Z - 5.0, VGA_Z + 5.0).edges("|Y").fillet(2.0))
         for dx in (-12.5, 12.5):
             p = p.cut(cyl((VGA_X + dx, y0, VGA_Z), (0, 1, 0), 1.6, T_REAR + 2))
-    # avtrekk oppe til venstre
+    # exhaust vents at the upper left
     z = 125.0
     while z < HB - 16:
         p = p.cut(box(10, 64, y0, y1, z, z + 3.0))
@@ -547,16 +551,16 @@ def rear_panel():
 
 
 def zorro_cover(i):
-    """Blindlokk for Zorro-aapning i, etter monster av standard PCI-blindlokk.
-    Skrives ut med pluggen ned og stotter under hals og flik. Legges rett paa plass og skrus i leppa med M3 x 6."""
+    """Blanking cover for Zorro opening i, patterned on a standard PCI blanking cover.
+    Printed with the plug down and supports under the neck and the tab. Dropped into place and screwed to the lip with M3 x 6."""
     zp = zorro_planes()[i]
     w = COVER_W / 2
-    yi = Y_TUBE1                                   # bakpanelets innside
-    tt = 1.5                                       # tykkelse flik
-    c = box(LIP_X1 + 0.3, ZORRO_X1 + 1.5, yi - COVER_T, yi, zp - w, zp + w)                       # plate over aapningen
-    c = c.union(box(LIP_X0 - tt, LIP_X1 + 0.3, yi - COVER_T, yi, zp - w, zp + LIP_Z[0] - 0.5))   # hals forbi leppa
-    c = c.union(box(LIP_X0 - tt, LIP_X0, yi - COVER_TAB_H, yi, zp - w, zp + w))                   # flik mot leppa
-    # plugg som gaar inn i aapningen, saa lokket hviler i bakpanelet og ikke bare paa skruen
+    yi = Y_TUBE1                                   # inside of the rear panel
+    tt = 1.5                                       # thickness of the tab
+    c = box(LIP_X1 + 0.3, ZORRO_X1 + 1.5, yi - COVER_T, yi, zp - w, zp + w)                       # plate over the opening
+    c = c.union(box(LIP_X0 - tt, LIP_X1 + 0.3, yi - COVER_T, yi, zp - w, zp + LIP_Z[0] - 0.5))   # neck past the lip
+    c = c.union(box(LIP_X0 - tt, LIP_X0, yi - COVER_TAB_H, yi, zp - w, zp + w))                   # tab against the lip
+    # plug that enters the opening, so the cover rests in the rear panel and not only on the screw
     k = 0.25
     c = c.union(box(ZORRO_X0 + k, ZORRO_X1 - k, yi - 0.1, yi + T_REAR - 0.4, zp - ZORRO_OPEN_W / 2 + k, zp + ZORRO_OPEN_W / 2 - k))
     c = c.cut(cyl((LIP_X0 - tt - 1, yi - LIP_HOLE_IN, zp + LIP_HOLE_DZ), (1, 0, 0), CLEAR / 2, tt + 2))
@@ -573,10 +577,10 @@ def foot():
         fin = box(x0, x1, y0, y1, z, z + fin_t).cut(box(x0 + rw, x1 - rw, y0 + rw, y1 - rw, z - 1, z + fin_t + 1))
         f = fin if f is None else f.union(fin)
         z += fin_t + gap
-    # stolper som baerer lamellene, ca 28 mm mellom
+    # posts that carry the grills, about 28 mm apart
     n = 6
     for i in range(n + 1):
-        y = y0 + 1.5 + (y1 - y0 - 4.0 - 3.0) * i / n      # hjornestolpene trukket inn ogsaa i dybden
+        y = y0 + 1.5 + (y1 - y0 - 4.0 - 3.0) * i / n      # the corner posts are inset in depth as well
         f = f.union(box(x0 + 1.5, x0 + rw, y, y + 4.0, -FOOT_H, 0))
         f = f.union(box(x1 - rw, x1 - 1.5, y, y + 4.0, -FOOT_H, 0))
     for i in range(1, 3):
@@ -590,7 +594,7 @@ def foot():
     return f
 
 
-# ---------------------------------------------------------------- referansevolumer (skrives ikke ut)
+# ---------------------------------------------------------------- reference volumes (not printed)
 def ref_board():
     pcb = box(X_PCB, X_PCB + PCB_T, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0, BOARD_Z0 + PCB)
     comp = box(X_PCB - COMP_H, X_PCB, Y_PCB_FRONT + 2, Y_PCB_REAR, BOARD_Z0 + 2, BOARD_Z0 + PCB - 2)
@@ -598,19 +602,19 @@ def ref_board():
 
 
 def ref_floppy():
-    xl = XC - FD_SLOT_FROM_TOP          # lokket mot venstre
+    xl = XC - FD_SLOT_FROM_TOP          # lid towards the left
     return box(xl, xl + FD_H, T_FRONT + FD_GAP, T_FRONT + FD_GAP + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
 
 
 def ref_picopsu():
-    # ATX CN1: u 103..153, v 157..167 ESTIMAT fra kortbildet.
-    # PicoPSU maalt: 36 over kortet, 23 tykk, 45 bred, henger ca 2,5 ut over forkanten av kortet.
+    # ATX CN1: u 103..153, v 157..167 ESTIMATE from a picture of the board.
+    # PicoPSU measured: 36 above the board, 23 thick, 45 wide, overhangs the front edge of the board by about 2.5.
     return box(X_PCB - PICO_H, X_PCB, Y_PCB_FRONT - PICO_OVERHANG, Y_PCB_FRONT - PICO_OVERHANG + PICO_T,
                BOARD_Z0 + 103.0, BOARD_Z0 + 103.0 + PICO_W)
 
 
 def ref_zorro():
-    # TandemIDE 129 x 74 i slot 1, nettverkskort 134 x 53 i slot 2. Plassert midt paa Zorro-kontakten (26..157 fra bakkant, ESTIMAT)
+    # TandemIDE 129 x 74 in slot 1, network card 134 x 53 in slot 2. Centred on the Zorro connector (26..157 from the rear edge, ESTIMATE)
     cards = []
     yc = Y_PCB_REAR - 91.5
     for zp, (L, h) in zip(zorro_planes(), ((129.0, 74.0), (134.0, 53.0))):
@@ -621,15 +625,15 @@ def ref_zorro():
 TEST_UPS = [5.0, 5.5, 6.0]
 
 
-def floppy_testbit():
-    # Liten mal for aa proeve hullene mot driven for sidepanelet skrives ut. Skrives ut flatt.
-    # Drivens side legges paa platen, bunnplaten mot den lange kanten, forkanten mot den korte.
+def floppy_test_gauge():
+    # Small gauge for trying the holes against the drive before the side panel is printed. Printed flat.
+    # The side of the drive lies on the plate, the bottom plate against the long edge and the front against the short edge.
     L = FD_HOLES_Y[-1] + 8.0
     p = box(0, 14.0, 0, L, 0, 3.0)
-    p = p.union(box(-2.0, 0, -2.0, L, 0, 9.0))        # lang anleggskant = drivens bunnplate
-    p = p.union(box(-2.0, 14.0, -2.0, 0, 0, 9.0))     # kort anleggskant = drivens forkant
-    # hvert hull har sin egen hoyde over bunnplaten, saa en utskrift avgjor hoyden: fremste 5,0, midtre 5,5, bakerste 6,0
-    # antall hakk i ytterkanten ved hullet viser hvilket det er (1, 2, 3)
+    p = p.union(box(-2.0, 0, -2.0, L, 0, 9.0))        # long stop = bottom plate of the drive
+    p = p.union(box(-2.0, 14.0, -2.0, 0, 0, 9.0))     # short stop = front of the drive
+    # each hole has its own height above the bottom plate, so one print settles the height: front 5.0, middle 5.5, rear 6.0
+    # the number of notches in the outer edge at a hole shows which one it is (1, 2, 3)
     for i, (hy, up) in enumerate(zip(FD_HOLES_Y, TEST_UPS)):
         p = p.cut(cyl((up, hy, -1), (0, 0, 1), 1.6, 5.0))
         for k in range(i + 1):
@@ -638,41 +642,44 @@ def floppy_testbit():
 
 
 PARTS = {} if not ZORRO else {
-    "zorro_blindlokk_1": (lambda: zorro_cover(0), (0.6, 0.6, 0.6)),
-    "zorro_blindlokk_2": (lambda: zorro_cover(1), (0.6, 0.6, 0.6)),
+    "zorro_cover_1": (lambda: zorro_cover(0), (0.6, 0.6, 0.6)),
+    "zorro_cover_2": (lambda: zorro_cover(1), (0.6, 0.6, 0.6)),
 }
 PARTS.update({
-    "knapp_power": (lambda: button(0), (0.9, 0.88, 0.82)),
-    "knapp_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
-    "frontpanel": (front_panel, (0.85, 0.83, 0.78)),
-    "u_brakett": (u_bracket, (0.75, 0.73, 0.68)),
-    "sidepanel_venstre": (side_panel, (0.75, 0.73, 0.68)),
-    "bakpanel": (rear_panel, (0.45, 0.45, 0.45)),
-    "fot": (foot, (0.45, 0.45, 0.45)),
+    "button_power": (lambda: button(0), (0.9, 0.88, 0.82)),
+    "button_reset": (lambda: button(1), (0.9, 0.88, 0.82)),
+    "front_panel": (front_panel, (0.85, 0.83, 0.78)),
+    "u_bracket": (u_bracket, (0.75, 0.73, 0.68)),
+    "side_panel_left": (side_panel, (0.75, 0.73, 0.68)),
+    "rear_panel": (rear_panel, (0.45, 0.45, 0.45)),
+    "foot": (foot, (0.45, 0.45, 0.45)),
 })
 
 if __name__ == "__main__":
     # Output directory: first argument, else out/ in the repository root (the parent of src/)
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out")
     os.makedirs(out, exist_ok=True)
-    asm = cq.Assembly(name="DeniseITX_kabinett")
+    asm = cq.Assembly(name="rook3k")
     for name, (fn, col) in PARTS.items():
         s = fn()
-        cq.exporters.export(s, os.path.join(out, f"{name}.step"))
+        if name == "zorro_cover_1":
+            cq.exporters.export(s, os.path.join(out, "zorro_cover.step"))     # the two covers are identical, print two
+        elif name != "zorro_cover_2":
+            cq.exporters.export(s, os.path.join(out, f"{name}.step"))
         asm.add(s, name=name, color=cq.Color(*col))
     pcb, comp = ref_board()
-    asm.add(pcb, name="REF_hovedkort", color=cq.Color(0.4, 0.1, 0.4))
-    asm.add(comp, name="REF_komponentsone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
+    asm.add(pcb, name="REF_mainboard", color=cq.Color(0.4, 0.1, 0.4))
+    asm.add(comp, name="REF_component_zone", color=cq.Color(0.6, 0.3, 0.8, 0.3))
     if FLOPPY:
         asm.add(ref_floppy(), name="REF_floppy", color=cq.Color(0.8, 0.7, 0.5))
     for i, m in enumerate(ref_mx()):
         asm.add(m, name=f"REF_mx{i+1}", color=cq.Color(0.2, 0.2, 0.2))
-    asm.add(ref_sd_zone(), name="REF_sd_sone", color=cq.Color(0.2, 0.5, 0.9, 0.3))
+    asm.add(ref_sd_zone(), name="REF_sd_zone", color=cq.Color(0.2, 0.5, 0.9, 0.3))
     asm.add(ref_picopsu(), name="REF_picopsu", color=cq.Color(0.9, 0.8, 0.1))
     for i, c in enumerate(ref_zorro()):
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
-    asm.save(os.path.join(out, "DeniseITX_kabinett_v0.21.step"))
+    asm.save(os.path.join(out, f"rook3k_{VERSION}.step"))
     if FLOPPY:
-        tb = floppy_testbit()
-        cq.exporters.export(tb, os.path.join(out, "testbit_floppyhull.step"))
+        tb = floppy_test_gauge()
+        cq.exporters.export(tb, os.path.join(out, "floppy_test_gauge.step"))
     print("ok", out)

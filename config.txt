@@ -1,6 +1,6 @@
 # Rook 3K configuration
 #
-# Read by src/denise_itx_case.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
+# Read by src/rook3k.py and src/make_3mf.py. Lines are key=value, and # starts a comment.
 # All dimensions are in millimetres. A key that is left out or left empty keeps its default.
 # The values below are the defaults.
 
@@ -9,8 +9,10 @@
 # Minimum sizes apply and depend on the options below. The script stops with an error if a value
 # is too low, and warns if the case exceeds the Bambu Lab H2D single nozzle volume (325 x 320 x 325).
 # The defaults are the smallest practical case with a legacy floppy drive.
+# The minimum depth is 210. It gives a warning, because the default of 211 leaves 1 mm more
+# between the pins of the power and reset switches and the mainboard.
 rook_height=227
-rook_depth=210
+rook_depth=211
 rook_width=117
 
 # Corner radius seen from the front, 0.5 to 6.
