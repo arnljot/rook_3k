@@ -93,6 +93,10 @@ zorro_slot_2=open
 # Cut-out for a DE-15 panel connector, for example from an Indivision.
 back_port_vga_enable=true
 
+# Material left in the recess behind the VGA cut-out, 0.8 to 1.2. A test gauge with 1.2, 1.0 and 0.8
+# is written to out/vga_test_gauge.step. All three fitted the connector it was tried with.
+back_port_vga_rim_thickness=0.8
+
 # Hole for the DC panel jack, and its diameter.
 back_port_dc_enable=true
 back_port_dc_diameter=8.1

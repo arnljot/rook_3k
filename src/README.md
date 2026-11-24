@@ -48,6 +48,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | `zorro_slot_1`, `zorro_slot_2` | open, open | Slot 1 is the lower one. `open` is an opening with a lip and a blanking cover, `closed` is solid panel, `custom` is solid panel with your own cut-outs, see below. |
 | `ssd_mount_enable` | false | Four ears on the inside of the left side panel for a 2.5" SSD, above the floppy shelf. The drive is screwed through the ears into its side holes with M3 x 6, so nothing shows on the outside. Mount it while the side panel is off the case. |
 | `back_port_vga_enable` | true | Cut-out for a DE-15 panel connector. |
+| `back_port_vga_rim_thickness` | 0.8 | Material left in the recess behind the VGA cut-out, 0.8 to 1.2. `out/vga_test_gauge.step` has all three steps to try a connector against. |
 | `back_port_dc_enable`, `back_port_dc_diameter` | true, 8.1 | Hole for the DC panel jack. |
 | `heatinsert_diameter`, `heatinsert_depth`, `heatinsert_wall_thickness` | 4, 4.5, 1.6 | Heat-set insert holes and the minimum wall around them. |
 

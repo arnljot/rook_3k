@@ -49,6 +49,7 @@ CONFIG_DEFAULTS = {
     "zorro_slot_1": "open",
     "zorro_slot_2": "open",
     "back_port_vga_enable": True,
+    "back_port_vga_rim_thickness": 0.8,
     "back_port_dc_enable": True,
     "back_port_dc_diameter": 8.1,
     "heatinsert_diameter": 4.0,
@@ -122,7 +123,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.24"
+VERSION = "v0.25"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -264,7 +265,7 @@ COVER_TAB_H = 13.5
 # DC and VGA sit above the Zorro openings, so the screws in the lips can be reached from the left
 DC_X, DC_Z, DC_D = 14.0, 52.0, CFG["back_port_dc_diameter"]   # neck measured to 7.75
 DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # recess on the inside and the material left. Neck 4.5 long, nut 1.88 thick
-VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, 1.5   # recess for the housing of the panel connector, and the material left
+VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, CFG["back_port_vga_rim_thickness"]   # recess for the housing of the panel connector, and the material left. 1.5 was too thick; 1.2, 1.0 and 0.8 all fit in the test gauge
 VGA_X, VGA_Z = 44.0, 52.0          # DE-15 lying down. Opening 18 x 10, screw holes 25 apart ESTIMATE
 IO_CLEAR = 0.2
 IO_GAP = 1.0        # rear edge of the PCB to the inside of the rear panel ESTIMATE
@@ -402,6 +403,8 @@ def validate_config():
         config_error(f"led_window_width must be 0.5 to {GROOVE - 2.0:g} and led_window_length 0.5 to {LED_PITCH - 1.0:g}")
     if FLOPPY and not 2.5 <= FD_HOLE_UP <= 12.0:
         config_error(f"floppy_mount_hole_height={FD_HOLE_UP:g} must be between 2.5 and 12.0")
+    if not 0.8 - eps <= VGA_REC_LEFT <= 1.2 + eps:
+        config_error(f"back_port_vga_rim_thickness={VGA_REC_LEFT:g} must be between 0.8 and 1.2")
     if not 3.0 <= DC_D <= 20.0:
         config_error(f"back_port_dc_diameter={DC_D:g} must be between 3.0 and 20.0")
     # Bambu Lab H2D, single nozzle: 325 x 320 x 325 mm. The U-bracket lies on its right wall.

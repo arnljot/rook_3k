@@ -51,8 +51,6 @@ for _name, (_fn, _col) in d.PARTS.items():
 PLATES = [(k if len(_plates[k]) == 1 or k == "buttons" else f"{k} x{len(_plates[k])}", _plates[k]) for k in ORDER if k in _plates]
 if d.FLOPPY:
     PLATES.append(("floppy_test_gauge", [("floppy_test_gauge", d.floppy_test_gauge(), I3)]))
-if d.CFG["back_port_vga_enable"]:
-    PLATES.append(("vga_test_gauge", [("vga_test_gauge", d.vga_test_gauge(), RX_P)]))
 
 
 def mesh(shape, R):

@@ -16,7 +16,7 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 ## Status
 
-Work in progress, version 0.24. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector did not fit and is being worked out with a test gauge. The front panel, the side panel and the foot have not been printed yet. See [CHANGELOG.md](CHANGELOG.md).
+Work in progress, version 0.25. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector was too shallow at first and has been set with a test gauge. The front panel, the side panel and the foot have not been printed yet. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Printing
 
@@ -72,7 +72,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `config.txt` holds the options that can be changed without editing the model: the mainboard, the case size, floppy drive, buttons, Zorro slots, feet and more.
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
-- `rook3k_v0.24.3mf` is the Bambu Studio project for v0.24 with the default configuration, for the Bambu Lab H2D.
+- `rook3k_v0.25.3mf` is the Bambu Studio project for v0.25 with the default configuration, for the Bambu Lab H2D.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
 
 ## Trivia
