@@ -2,6 +2,17 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.24 - One screw size, panels fastened from the inside
+
+- Every screw is now M3 x 6 with a cylinder head, with 3 mm under the head and 3 mm in the insert.
+- Front panel: the screws through the front ribs of the U-bracket have counterbores for the heads. The right hand screws moved 3 mm towards the middle.
+- Rear panel: fastened from the inside. The rear panel has four bosses with inserts that sit in pockets in the rear ribs. There are no screws on the back of the case any more.
+- Left side panel: cylinder head screws in counterbores instead of countersunk screws, with a boss behind each. `side_plug.step` is a plug that hides the screw head.
+- The ribs of the U-bracket are 10 mm high and 11 mm deep, up from 8 by 8, to make room for this.
+- The U-bracket, the left side panel and the rear panel change. The front panel changes only in the position of two insert holes. A rear panel from v0.22 or v0.23 still lines up with the new U-bracket for a trial fit.
+- README lists the screws and inserts and the assembly order.
+- Not test printed in this form.
+
 ## v0.23 - Mainboard profiles, slot states and more options
 
 - `mainboard` selects the board profile. `denise_itx` is unchanged, `pc_itx` gives a standard ATX aperture with a pocket for a loose I/O shield, `alicia_itx` is reserved.

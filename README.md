@@ -8,7 +8,7 @@ A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
 ![Rear panel with I/O, Zorro, VGA and DC cut-outs](out/rook3k_rear_panel.png)
 
-*Renders of the v0.23 CAD model with the default configuration.*
+*Renders of the v0.24 CAD model with the default configuration.*
 
 The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000. The name follows from that: the rook is the tower among the chess pieces, and 3K is 3000.
 
@@ -16,7 +16,7 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 ## Status
 
-Work in progress, version 0.23. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector did not fit and is being worked out with a test gauge. The front panel, the side panel and the foot have not been printed yet. See [CHANGELOG.md](CHANGELOG.md).
+Work in progress, version 0.24. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector did not fit and is being worked out with a test gauge. The front panel, the side panel and the foot have not been printed yet. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Printing
 
@@ -42,6 +42,23 @@ Printers with a bed shorter than 227 mm in both directions cannot print the main
 
 ## Hardware
 
+Every screw in the case is the same: M3 x 6 with a cylinder head and hex socket (ISO 4762). Each one has 3 mm of material under the head and 3 mm in a heat-set insert. Heads up to 6 mm in diameter fit the counterbores.
+
+| Where | Screws | Inserts |
+|---|---|---|
+| Front panel to U-bracket, from the inside | 4 | 4, in the front panel |
+| Rear panel to U-bracket, from the inside | 4 | 4, in the rear panel |
+| Left side panel, from the outside | 4 | 4, in the U-bracket |
+| Foot, from the inside | 4 | 4, in the foot |
+| Mainboard | 4 | 4, in the U-bracket |
+| Floppy drive | 3 | none, into the drive |
+| Zorro blanking covers | 2 | 2, in the rear panel |
+| SSD, optional | 4 | none, into the drive |
+
+That is 25 screws and 22 inserts for the default configuration. The only screws that show are the four in the left side panel. They sit in counterbores that take a printed plug, held by a small piece of double-sided tape. The hole in the plug is for a needle to lift it out again.
+
+Assembly order matters, because the front and rear panel screws are driven from the inside along the depth of the case. Fit the front panel and the rear panel to the U-bracket before the mainboard goes in. A hex key reaches the screws where a screwdriver does not.
+
 The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](https://cnckitchen.com). The insert holes are 4.0 mm in diameter and 4.5 mm deep, with a narrower relief behind the insert for the screw. The `heatinsert_` keys in `config.txt` can be changed to suit other inserts.
 
 The power and reset buttons are intended to press ordinary MX-style mechanical keyboard switches. The two switches snap into a plate in the U-bracket with 14 x 14 mm cut-outs, and the printed buttons sit on the switch stems. Keyboard switches are momentary. The switch plate and the fit of the switches are verified in a test print of the U-bracket, and so are the four mainboard mounting holes. The switch pins point towards the front edge of the mainboard with a few millimetres to spare, so solder the wires to the side of the pins, and clip off the plastic locating pegs on the switch if they are in the way.
@@ -55,7 +72,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `config.txt` holds the options that can be changed without editing the model: the mainboard, the case size, floppy drive, buttons, Zorro slots, feet and more.
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
-- `rook3k_v0.23.3mf` is the Bambu Studio project for v0.23 with the default configuration, for the Bambu Lab H2D.
+- `rook3k_v0.24.3mf` is the Bambu Studio project for v0.24 with the default configuration, for the Bambu Lab H2D.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines.
 
 ## Credits

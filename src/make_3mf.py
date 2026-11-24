@@ -37,10 +37,10 @@ RX_F = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]], float)    # upside down
 
 # How each kind of part lies on the plate, and the order of the plates
 ORIENT = {"front_panel": RX_M, "u_bracket": RY_P, "side_panel_left": RY_M, "rear_panel": RX_M, "foot": I3,
-          "button_power": RX_P, "button_reset": RX_P, "zorro_cover": RX_M, "foot_pad": RX_F, "tpu_pad": I3}
+          "button_power": RX_P, "button_reset": RX_P, "zorro_cover": RX_M, "foot_pad": RX_F, "tpu_pad": I3, "side_plug": RY_M}
 # Small parts of the same kind and material share a plate
 PLATE_OF = {"button_power": "buttons", "button_reset": "buttons"}
-ORDER = ["front_panel", "u_bracket", "side_panel_left", "rear_panel", "foot", "foot_pad", "tpu_pad", "buttons", "zorro_cover"]
+ORDER = ["front_panel", "u_bracket", "side_panel_left", "rear_panel", "foot", "foot_pad", "tpu_pad", "buttons", "zorro_cover", "side_plug"]
 
 d.check_clearances()
 _plates = {}

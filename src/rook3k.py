@@ -122,7 +122,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.23"
+VERSION = "v0.24"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -311,10 +311,25 @@ Z_LEDS = [Z_GROOVE1 - LED_TOP_GAP - LED_L / 2 - i * LED_PITCH for i in range(2)]
 Z_SLOT1 = Z_LEDS[-1] - LED_L / 2 - 3.5      # disk slot placed just below the LEDs
 ZC_SLOT = Z_SLOT1 - SLOT_L / 2
 
-RIB = max(8.0, INS_D + 2 * INS_WALL)
-RIB_Z = [(T, T + RIB), (HB - T - RIB, HB - T)]
-RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB), (Y_TUBE1 - RIB, Y_TUBE1)]
-PANEL_SCREW_X = [25.0, W - 25.0]
+# Every screw in the case is M3 x 6 with a cylinder head: 3 mm of material under the head and 3 mm in the insert.
+HEAD_D, HEAD_H = 6.5, 3.0          # counterbore for the screw head (heads up to 6 mm), and the head height
+UNDER_HEAD = 3.0                   # material left under a screw head
+RIB_H = max(10.0, INS_D + 2 * INS_WALL + 2.0)     # ribs: height
+RIB_D = max(11.0, INS_D + 2 * INS_WALL + 3.0)     # ribs: depth from the front or rear panel
+RIB_Z = [(T, T + RIB_H), (HB - T - RIB_H, HB - T)]
+RIB_Y = [(Y_TUBE0, Y_TUBE0 + RIB_D), (Y_TUBE1 - RIB_D, Y_TUBE1)]
+PANEL_SCREW_Z = [T + 4.0, HB - T - 4.0]            # front and rear panel screws, both driven from the inside
+FRONT_SCREW_X = [25.0, W - 28.0]
+REAR_SCREW_X = [25.0, W - 25.0]
+REAR_BOSS_L = RIB_D - UNDER_HEAD - 0.2             # boss on the rear panel that sits in a pocket in the rib
+REAR_BOSS_W = 8.0
+# side panel screws sit in a counterbore that also takes a plug over the head
+PLUG_T = 1.0
+SIDE_CB = PLUG_T + 0.2 + HEAD_H                    # plug, tape and head
+SIDE_BOSS_X1 = SIDE_CB + UNDER_HEAD                # the boss on the side panel ends here, the rib starts just after
+RIB_X0 = SIDE_BOSS_X1 + 0.2
+SIDE_SCREW_Y = [Y_TUBE0 + 5.5, Y_TUBE1 - 5.5]
+SIDE_SCREW_Z = [T + RIB_H / 2, HB - T - RIB_H / 2]
 FOOT_SCREWS = [(10.0, 27.0), (W - 10.0, 27.0), (10.0, D - 34.0), (W - 10.0, D - 34.0)]
 # separate feet with TPU pads, as an alternative to the grill foot
 PAD_H, PAD_D = CFG["bottom_pad_height"], CFG["bottom_pad_diameter"]
@@ -338,7 +353,7 @@ def validate_config():
     """Stop on values the design cannot hold, warn on values that exceed the Bambu Lab H2D single nozzle volume."""
     eps = 1e-6
     # height: the mainboard must clear the upper rib, and the front must hold the LEDs and the floppy slot
-    h_min = BOARD_Z0 + PCB + RIB + T + 1.0
+    h_min = BOARD_Z0 + PCB + RIB_H + T + 1.0
     if FLOPPY:
         h_min = max(h_min, BOT_M + TOP_M + 2 * STEEP + LED_TOP_GAP + LED_L + LED_PITCH + 3.5 + SLOT_L)
     # depth: the front edge of the mainboard must sit behind the pins of the power and reset switches
@@ -522,9 +537,9 @@ def front_panel():
     if CFG["pc_badge_recess_enable"]:
         p = p.cut(box(bx0, bx0 + bs, -1, BADGE_D, BADGE_Z, BADGE_Z + bs).edges("|Y").fillet(1.5))
     # insert holes at the back for the screws through the ribs of the U-bracket
-    for (z0, z1) in RIB_Z:
-        for x in PANEL_SCREW_X:
-            p = p.cut(insert_hole((x, T_FRONT, (z0 + z1) / 2), (0, -1, 0), ext=3.0))
+    for zc in PANEL_SCREW_Z:
+        for x in FRONT_SCREW_X:
+            p = p.cut(insert_hole((x, T_FRONT, zc), (0, -1, 0), ext=3.0))
     return p
 
 
@@ -538,17 +553,23 @@ def u_bracket():
     for (y0, y1) in RIB_Y:
         for (z0, z1) in RIB_Z:
             x1 = RIB_FRONT_BOTTOM_X1 if (y0 == Y_TUBE0 and z0 == T) else W - T
-            u = u.union(box(X_SPLIT, x1, y0, y1, z0, z1))
+            u = u.union(box(RIB_X0, x1, y0, y1, z0, z1))
     for iy, (y0, y1) in enumerate(RIB_Y):
-        for (z0, z1) in RIB_Z:
-            yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
+        for iz, (z0, z1) in enumerate(RIB_Z):
+            zc = PANEL_SCREW_Z[iz]
             # side panel screw into the end of the rib
-            u = u.cut(insert_hole((X_SPLIT, yc, zc), (1, 0, 0)))
-            for x in PANEL_SCREW_X:
-                if iy == 0:   # front: screw from the inside through the rib
-                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB + 2))
-                else:         # rear: heat-set insert for a screw from the outside through the rear panel
-                    u = u.cut(insert_hole((x, y1, zc), (0, -1, 0), ext=3.0))
+            u = u.cut(insert_hole((RIB_X0, SIDE_SCREW_Y[iy], SIDE_SCREW_Z[iz]), (1, 0, 0)))
+            if iy == 0:
+                # front: screw from the inside through the rib, with the head sunk so 3 mm is left under it
+                for x in FRONT_SCREW_X:
+                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, RIB_D + 2))
+                    u = u.cut(cyl((x, y0 + UNDER_HEAD, zc), (0, 1, 0), HEAD_D / 2, RIB_D - UNDER_HEAD + 1))
+            else:
+                # rear: a pocket for the boss on the rear panel, and a screw from the inside through the web that is left
+                for x in REAR_SCREW_X:
+                    w = REAR_BOSS_W / 2 + 0.25
+                    u = u.cut(box(x - w, x + w, y0 + UNDER_HEAD, y1 + 0.1, z0, z1))
+                    u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, UNDER_HEAD + 2))
     # plate for the two MX switches, with a stiffener along the upper edge
     h = MX_BODY / 2
     if MX_Z:
@@ -578,12 +599,17 @@ def u_bracket():
 
 def side_panel():
     s = _ring().intersect(box(-1, X_SPLIT, 0, D, -1, HB + 1))
-    for (y0, y1) in RIB_Y:
-        for (z0, z1) in RIB_Z:
-            yc, zc = (y0 + y1) / 2, (z0 + z1) / 2
-            s = s.union(cyl((T - 0.1, yc, zc), (1, 0, 0), 4.0, X_SPLIT - T + 0.05))      # pad resting against the end of the rib
-            s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, T + 3))
-            s = s.cut(cq.Solid.makeCone(3.2, CLEAR / 2, 1.7, V(0, yc, zc), V(1, 0, 0)))
+    for yc in SIDE_SCREW_Y:
+        for zc in SIDE_SCREW_Z:
+            # boss that reaches into the corner where the rib is cut short, so the screw head can sit deep enough for a plug
+            hz = RIB_H / 2 - 0.2
+            s = s.union(box(T - 0.1, SIDE_BOSS_X1, yc - 5.3, yc + 5.3, zc - hz, zc + hz))
+            s = s.cut(cyl((-1, yc, zc), (1, 0, 0), HEAD_D / 2, 1 + SIDE_CB))
+            s = s.cut(cyl((-1, yc, zc), (1, 0, 0), CLEAR / 2, SIDE_BOSS_X1 + 2))
+            # two stepped layers above the counterbore, so its ceiling prints as plain bridges without supports
+            r, c = HEAD_D / 2, CLEAR / 2
+            s = s.cut(box(SIDE_CB - 0.01, SIDE_CB + 0.2, yc - r, yc + r, zc - c, zc + c))
+            s = s.cut(box(SIDE_CB + 0.19, SIDE_CB + 0.4, yc - c, yc + c, zc - c, zc + c))
     if SSD:
         # four ears with a screw hole each, in line with the side holes of the drive
         xh = T + SSD_HOLE_UP
@@ -701,9 +727,12 @@ def rear_panel():
     while z < HB - 16:
         p = p.cut(box(VENT_X0, VENT_X1, y0, y1, z, z + 3.0))
         z += 7.0
-    for (z0, z1) in RIB_Z:
-        for x in PANEL_SCREW_X:
-            p = p.cut(cyl((x, y0, (z0 + z1) / 2), (0, 1, 0), CLEAR / 2, T_REAR + 2))
+    # bosses with an insert each, for the screws that come from the inside through the ribs of the U-bracket
+    for zc, (z0, z1) in zip(PANEL_SCREW_Z, RIB_Z):
+        for x in REAR_SCREW_X:
+            ye = Y_TUBE1 - REAR_BOSS_L
+            p = p.union(box(x - REAR_BOSS_W / 2, x + REAR_BOSS_W / 2, ye, Y_TUBE1 + 0.1, z0 + 0.3, z1 - 0.3))
+            p = p.cut(insert_hole((x, ye, zc), (0, 1, 0), ext=1.5))
     return p
 
 
@@ -749,6 +778,14 @@ def foot():
         f = f.union(box(x - hb, x + hb, y - hb, y + hb, -FOOT_H, 0).intersect(box(x0 + 1.5, x1 - 1.5, y0, y1, -FOOT_H, 0)))
         f = f.cut(insert_hole((x, y, 0.0), (0, 0, -1)))
     return f
+
+
+def side_plug(i):
+    """Plug that hides the head of a side panel screw. Held by a small piece of double-sided tape.
+    The hole in the middle is for a needle to lift it out again."""
+    yc, zc = [(y, z) for y in SIDE_SCREW_Y for z in SIDE_SCREW_Z][i]
+    d = cq.Workplane("YZ").circle((HEAD_D - 0.2) / 2).circle(0.5).extrude(PLUG_T)
+    return d.translate((0, yc, zc))
 
 
 def foot_pad(i):
@@ -865,7 +902,7 @@ def check_clearances():
 
 
 # Parts that are printed more than once. They are exported as one STEP file and laid out as copies in the 3MF.
-MULTI = ("zorro_cover", "foot_pad", "tpu_pad")
+MULTI = ("zorro_cover", "foot_pad", "tpu_pad", "side_plug")
 
 
 def base_name(name):
@@ -885,6 +922,8 @@ PARTS.update({
     "side_panel_left": (side_panel, (0.75, 0.73, 0.68)),
     "rear_panel": (rear_panel, (0.45, 0.45, 0.45)),
 })
+for _i in range(4):
+    PARTS[f"side_plug_{_i + 1}"] = (lambda i=_i: side_plug(i), (0.75, 0.73, 0.68))
 if BOTTOM == "foot_grill":
     PARTS["foot"] = (foot, (0.45, 0.45, 0.45))
 elif BOTTOM == "foot_pads":
