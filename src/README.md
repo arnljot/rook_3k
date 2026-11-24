@@ -26,7 +26,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 
 | Key | Default | Meaning |
 |---|---|---|
-| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` has I/O cut-outs for the Alicia 1200 and no Zorro slots. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. |
+| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` has I/O cut-outs for the Alicia 1200 and no Zorro slots. Its connectors sit in a pocket on the inside of the rear panel and the board sits 2 mm further back, so the U-bracket differs from the DeniseITX one. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. |
 | `rook_height` | 227 | Outer height without the foot. |
 | `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
 | `rook_width` | 117 | Outer width. |

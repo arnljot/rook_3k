@@ -2,6 +2,14 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.27 - Alicia 1200 connectors in a pocket on the inside
+
+- Only `mainboard=alicia_itx` changes. The parts of the default configuration are the same as in v0.26.
+- The rear panel is 3 mm thick, which left the D-sub connectors too short on the outside for a plug to seat. The connector housings and the rear edge of the board now sit in a pocket on the inside of the rear panel, which leaves 1 mm of material, as a sheet metal shield would. The outside of the panel stays flat.
+- The Alicia therefore sits 2 mm further back than a DeniseITX, and the mounting posts in the U-bracket move with it. A U-bracket printed for one board does not fit the other.
+- The openings for RGB and the two joystick ports are D-shaped.
+- The dimensions have still not been verified against an actual Alicia.
+
 ## v0.26 - Alicia 1200 added, VGA cut-out off by default
 
 - `mainboard=alicia_itx` is available. The rear panel gets cut-outs for RGB, keyboard, mouse, two joystick ports, audio and PCMCIA, and no Zorro slots. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. The cut-outs are plain rectangles and round holes for now.

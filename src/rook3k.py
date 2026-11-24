@@ -123,7 +123,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.26"
+VERSION = "v0.27"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -252,12 +252,16 @@ if MAINBOARD == "alicia_itx":
         return 173.575 - u, h + 5.81
     _hd = _a(155.1, 25.3)                       # HD15 (RGB) above two PS/2, one stacked connector
     _db = [_a(122.4, 6.4), _a(122.4, 22.3)]     # two DB9, stacked
-    IO_RECTS = [(_hd[0] - 9.0, _hd[1] - 5.0, _hd[0] + 9.0, _hd[1] + 5.0)]
-    IO_RECTS += [(c[0] - 10.0, c[1] - 5.75, c[0] + 10.0, c[1] + 5.75) for c in _db]
+    IO_DSUB = [_hd] + _db                       # D-shaped openings, wide side away from the PCB
+    IO_RECTS = []
     IO_RECTS.append((_a(77.1, 0)[0], _a(0, -0.3)[1], _a(14.2, 0)[0], _a(0, 7.9)[1]))      # PCMCIA
     IO_CIRCLES = [(*_a(163.7, 6.5), 13.5), (*_a(146.4, 6.5), 13.5)]                       # PS/2 keyboard and mouse
     IO_CIRCLES += [(*_a(98.7, 6.45), 11.0), (*_a(84.9, 6.45), 11.0)]                      # audio right and left
     IO_CIRCLES += [(c[0] + dx, c[1], 3.2) for c in [_hd] + _db for dx in (-12.5, 12.5)]   # jack screws
+    # The connector housings and the rear edge of the PCB sit in a pocket on the inside of the rear panel, so the
+    # outside stays flat and the connectors reach as far out as through a sheet metal shield.
+    IO_POCKET = (_a(173.6, -2.4), _a(-0.6, 32.6))
+IO_POCKET_LEFT = 1.0               # material left in the pocket
 IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
 IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
 VENT_X0, VENT_X1 = 10.0, min(64.0, IO_X_MIN - 2.0)       # exhaust vents, kept clear of the I/O cut-outs
@@ -282,7 +286,8 @@ DC_REC_D, DC_REC_LEFT = 12.1, 2.0    # recess on the inside and the material lef
 VGA_REC_W, VGA_REC_H, VGA_REC_LEFT = 32.6 + 0.6, 12.7 + 0.6, CFG["back_port_vga_rim_thickness"]   # recess for the housing of the panel connector, and the material left. 1.5 was too thick; 1.2, 1.0 and 0.8 all fit in the test gauge
 VGA_X, VGA_Z = 44.0, 52.0          # DE-15 lying down. Opening 18 x 10, screw holes 25 apart ESTIMATE
 IO_CLEAR = 0.2
-IO_GAP = 1.0        # rear edge of the PCB to the inside of the rear panel ESTIMATE
+# Rear edge of the PCB to the inside of the rear panel ESTIMATE. Negative for the Alicia, whose edge sits in the pocket
+IO_GAP = IO_POCKET_LEFT - T_REAR + 1.0 if MAINBOARD == "alicia_itx" else 1.0
 COMP_H = 14.0       # tallest ordinary component ESTIMATE
 ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u from the Zorro edge, v from the rear edge)
 
@@ -715,6 +720,14 @@ def rear_panel():
     for (sx, sy, dia) in IO_CIRCLES:
         x, z = io_to_panel(sx, sy)
         p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
+    if MAINBOARD == "alicia_itx":
+        for (sx, sy) in IO_DSUB:
+            x, z = io_to_panel(sx, sy)
+            pts = [(x - 5.4, z - 9.3), (x - 5.4, z + 9.3), (x + 5.4, z + 7.8), (x + 5.4, z - 7.8)]
+            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).edges("|Y").fillet(2.2)
+                      .translate((0, Y_TUBE1, 0)))
+        (xa, za), (xb, zb) = io_to_panel(*IO_POCKET[0]), io_to_panel(*IO_POCKET[1])
+        p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
     if MAINBOARD == "pc_itx":
         xa, za = io_to_panel(-0.3, -0.3)
         xb, zb = io_to_panel(IO_SHIELD_W + 0.3, IO_SHIELD_H + 0.3)

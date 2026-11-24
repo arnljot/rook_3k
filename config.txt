@@ -8,6 +8,7 @@
 # denise_itx  DeniseITX, with its I/O cut-outs built into the rear panel and two Zorro slots.
 # pc_itx      Any Mini-ITX board: a standard ATX aperture for the loose I/O shield. No Zorro slots. Not test printed.
 # alicia_itx  Alicia 1200, with its I/O cut-outs built into the rear panel. No Zorro slots.
+#             The board sits 2 mm further back than a DeniseITX, so the U-bracket is not the same.
 #             The dimensions have not been verified against an actual Alicia yet.
 mainboard=denise_itx
 
