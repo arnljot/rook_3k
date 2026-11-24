@@ -7,6 +7,7 @@ All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are
 - The recess for the VGA panel connector now leaves 0.8 mm of material, down from 1.5. All three steps of the test gauge fitted, 1.2, 1.0 and 0.8 mm, and the deepest was chosen.
 - `back_port_vga_rim_thickness` sets this value, from 0.8 to 1.2.
 - Only the rear panel changes. The other parts are the same as in v0.24.
+- README shows a shaded render of the case below the line drawings.
 - The VGA test gauge is still exported as `out/vga_test_gauge.step`, but no longer has a plate in the 3MF project.
 
 ## v0.24 - One screw size, panels fastened from the inside

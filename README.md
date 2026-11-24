@@ -8,7 +8,9 @@ A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
 ![Rear panel with I/O, Zorro, VGA and DC cut-outs](out/rook3k_rear_panel.png)
 
-*Renders of the v0.24 CAD model with the default configuration.*
+![Rook 3K shaded, seen from the front and from the rear](out/rook3k_shaded.png)
+
+*Renders of the v0.25 CAD model with the default configuration.*
 
 The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000. The name follows from that: the rook is the tower among the chess pieces, and 3K is 3000.
 
