@@ -10,7 +10,7 @@ A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
 ![Rook 3K shaded, seen from the front and from the rear](out/rook3k_shaded.png)
 
-*Renders of the v0.34 CAD model with the default configuration.*
+*Renders of the v0.35 CAD model with the default configuration.*
 
 The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000. The name follows from that: the rook is the tower among the chess pieces, and 3K is 3000.
 
@@ -18,7 +18,7 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 ## Status
 
-Work in progress, version 0.34. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector was too shallow at first and has been set with a test gauge. That cut-out is optional and off by default. The front panel, the side panel and the foot have not been printed yet. `mainboard=alicia_itx` gives a rear panel for the Alicia 1200. Its cut-outs follow an I/O shield that was made for the Alicia and is in use with real boards, but they have not been tried with a board in this case yet. Alicia boards exist with two different joystick connectors, chosen with `alicia_backplane`. See [CHANGELOG.md](CHANGELOG.md).
+Work in progress, version 0.35. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector was too shallow at first and has been set with a test gauge. That cut-out is optional and off by default. The front panel, the side panel and the foot have not been printed yet. `mainboard=alicia_itx` gives a rear panel for the Alicia 1200. Its cut-outs follow an I/O shield that was made for the Alicia and is in use with real boards, but they have not been tried with a board in this case yet. Alicia boards exist with two different joystick connectors, chosen with `alicia_backplane`. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Printing
 
@@ -47,6 +47,8 @@ Printers with a bed shorter than 227 mm in both directions cannot print the main
 The parts are laid out to print without supports. Bambu Studio still warns that the U-bracket has a floating cantilever. That is the lower front rib, which stops 18 mm above the bed to make room for the power and reset switches. Its underside is 10 x 11 mm and hangs from the bottom wall. It prints well enough without support. The underside is rough, but it faces the inside of the case and is not seen.
 
 For a cleaner result, enable supports, and the warning goes away. With supports the U-bracket can also be turned another way on the bed. As laid out, the rounded corners along the bed are built from flat layers and show steps, and another orientation can give smoother corners at the cost of support marks elsewhere. That trade-off is left to you.
+
+The pockets in the rear ribs of the U-bracket, where the bosses of the rear panel key in, also print with a small bridge when no support is used. The bridge sags a little. The pockets have 0.5 mm of clearance on each side of the boss to take that up, and the screw centres the rear panel when it is tightened. If the rear panel still goes in stiffly, trim the pockets lightly with a sharp knife.
 
 `rook_corner_radius=0` in `config.txt` gives square corners instead, for those who would rather add their own rounding or chamfer, or none.
 
@@ -85,7 +87,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `src/render.py` draws the pictures on this page from the model.
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
-- `rook3k_v0.34.3mf` is the Bambu Studio project for v0.34 with the default configuration, for the Bambu Lab H2D.
+- `rook3k_v0.35.3mf` is the Bambu Studio project for v0.35 with the default configuration, for the Bambu Lab H2D.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines. `rook3k_social_preview.png` is the 1280 x 640 picture used as the social preview of the repository.
 
 ## Trivia

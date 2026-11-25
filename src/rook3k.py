@@ -127,7 +127,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.34"
+VERSION = "v0.35"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -389,6 +389,9 @@ FRONT_SCREW_X = [25.0, W - 28.0]
 REAR_SCREW_X = [25.0, W - 25.0]
 REAR_BOSS_L = RIB_D - UNDER_HEAD - 0.2             # boss on the rear panel that sits in a pocket in the rib
 REAR_BOSS_W = 8.0
+# Clearance on each side of the boss in its pocket. The U-bracket is printed with one side of the pocket as a small
+# bridge, which sags a little without support. 0.25 was tight in a print, and the screw centres the panel anyway.
+REAR_BOSS_CLEAR = 0.5
 # side panel screws sit in a counterbore that also takes a plug over the head
 PLUG_T = 1.0
 SIDE_CB = PLUG_T + 0.2 + HEAD_H                    # plug, tape and head
@@ -688,7 +691,7 @@ def u_bracket():
             else:
                 # rear: a pocket for the boss on the rear panel, and a screw from the inside through the web that is left
                 for x in REAR_SCREW_X:
-                    w = REAR_BOSS_W / 2 + 0.25
+                    w = REAR_BOSS_W / 2 + REAR_BOSS_CLEAR
                     u = u.cut(box(x - w, x + w, y0 + UNDER_HEAD, y1 + 0.1, z0, z1))
                     u = u.cut(cyl((x, y0 - 1, zc), (0, 1, 0), CLEAR / 2, UNDER_HEAD + 2))
     # plate for the two MX switches, with a stiffener along the upper edge

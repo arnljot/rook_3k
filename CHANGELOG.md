@@ -2,6 +2,13 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.35 - More clearance where the rear panel keys into the U-bracket
+
+- The pockets in the rear ribs of the U-bracket have 0.5 mm of clearance on each side of the bosses of the rear panel, up from 0.25. Printed as laid out and without support, one side of each pocket is a small bridge that sags, and the rear panel went in with friction. The screw centres the panel when it is tightened.
+- README mentions this under supports and orientation.
+- Only the U-bracket changes. A U-bracket from v0.24 to v0.34 works with a light trim of the pockets.
+- Apart from this, the rear panel and the U-bracket have been fitted together without problems.
+
 ## v0.34 - The RAM module of the DeniseITX in the clearance check
 
 - The SIMM that stands along the upper edge of the DeniseITX is now a reference volume, 26.0 mm high, and part of the clearance check. Modules are usually 25.4 to 26.0 mm high, and the PlusRAM-2 is 25.33. Until now the tallest thing the model knew of on the board, apart from the PicoPSU and the Zorro cards, was 14 mm.
