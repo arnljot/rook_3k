@@ -127,7 +127,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.32"
+VERSION = "v0.33"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -254,7 +254,13 @@ SD_OFFSET = 15.0    # from the underside of the mainboard and out to the left
 LED_W, LED_L = CFG["led_window_width"], CFG["led_window_length"]    # LED windows in the groove
 
 # mainboard (Mini-ITX 170 x 170). Mounting holes and standoffs verified in a test print of the U-bracket
-PCB = 170.0
+# Size of the mainboard: along the rear edge, and from the rear edge to the front edge. The mounting holes follow
+# Mini-ITX, but the DeniseITX is larger than the 170 x 170 of the standard: 172.91 x 171.58 in the board outline of
+# revision 2.1. The rear edge and the edge by the Zorro slots are where the standard has them, and the extra is at the
+# opposite edges. Other revisions may differ. On a revision 2.x board in a case of depth 211, the gap to the switches
+# looks like the 1.0 mm this size gives. The Alicia is given the same size, which is the safe side for the clearance
+# check: a 3D model of it has this outline, but the board may be closer to the standard.
+PCB_U, PCB_V = (170.0, 170.0) if MAINBOARD == "pc_itx" else (172.91, 171.58)
 PCB_T = 1.6
 STANDOFF = 6.0
 BOARD_Z0 = 15.0     # Zorro edge of the board above the bottom of the body
@@ -358,7 +364,7 @@ Y_TUBE1 = D - T_REAR
 X_SPLIT = 4.0       # split between the left side panel and the U-bracket
 X_PCB = W - T - STANDOFF - PCB_T      # component side of the PCB
 Y_PCB_REAR = Y_TUBE1 - IO_GAP
-Y_PCB_FRONT = Y_PCB_REAR - PCB
+Y_PCB_FRONT = Y_PCB_REAR - PCB_V
 RIGHT_M = W - LEFT_M - 2 * CHAMFER_W - 14.0
 XC = LEFT_M + CHAMFER_W + 7.0      # centre of the groove and the disk slot
 Z_REC0, Z_REC1 = BOT_M, HB - TOP_M
@@ -409,14 +415,16 @@ def validate_config():
     """Stop on values the design cannot hold, warn on values that exceed the Bambu Lab H2D single nozzle volume."""
     eps = 1e-6
     # height: the mainboard must clear the upper rib, and the front must hold the LEDs and the floppy slot
-    h_min = BOARD_Z0 + PCB + RIB_H + T + 1.0
+    h_min = BOARD_Z0 + PCB_U + RIB_H + T + 1.0
     if FLOPPY:
         h_min = max(h_min, BOT_M + TOP_M + 2 * STEEP + LED_TOP_GAP + LED_L + LED_PITCH + 3.5 + SLOT_L)
     # depth: the front edge of the mainboard must sit behind the pins of the power and reset switches
     if BTN_LENGTHS:
-        d_min = Y_MX_END + 1.6 + PCB + IO_GAP + T_REAR
+        # the pin tips of the switches level with the front edge of the mainboard. Built and found to work with a
+        # DeniseITX: the pins end below the board
+        d_min = Y_MX_END + PCB_V + IO_GAP + T_REAR
     else:                                              # without switches the PicoPSU overhang sets the limit
-        d_min = T_FRONT + 1.0 + PICO_OVERHANG + PCB + IO_GAP + T_REAR
+        d_min = T_FRONT + 1.0 + PICO_OVERHANG + PCB_V + IO_GAP + T_REAR
     # width: front layout, rear panel cut-outs, Zorro card height, and floppy next to the PicoPSU
     w_min = LEFT_M + 2 * CHAMFER_W + GROOVE + BTN_XC + BTN_W / 2 + BTN_EDGE + 2.0
     io_w = (W - T - STANDOFF) - IO_X_MIN                                               # width taken by the I/O cut-outs
@@ -431,8 +439,8 @@ def validate_config():
         if val < low - eps:
             config_error(f"{key}={val:g} is too small, the minimum with this configuration is {low:.1f}")
     if BTN_LENGTHS and D < d_min + 1.0 - eps:
-        print(f"warning: rook_depth={D:g} leaves only {D - d_min + 1.6:.1f} mm between the switch pins and the mainboard, "
-              f"{d_min + 1.0:.0f} or more is recommended", file=sys.stderr)
+        print(f"warning: rook_depth={D:g} leaves only {max(0.0, D - d_min):.1f} mm between the switch pins and the edge of "
+              f"the mainboard, {math.ceil(d_min + 1.0 - 0.05):d} or more is recommended", file=sys.stderr)
     if R != 0 and not 0.5 <= R <= 6.0:
         config_error(f"rook_corner_radius={R:g} must be 0, for square corners, or between 0.5 and 6.0")
     if BOTTOM == "foot_grill":
@@ -932,8 +940,8 @@ def tpu_pad(i):
 
 # ---------------------------------------------------------------- reference volumes (not printed)
 def ref_board():
-    pcb = box(X_PCB, X_PCB + PCB_T, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0, BOARD_Z0 + PCB)
-    comp = box(X_PCB - COMP_H, X_PCB, Y_PCB_FRONT + 2, Y_PCB_REAR, BOARD_Z0 + 2, BOARD_Z0 + PCB - 2)
+    pcb = box(X_PCB, X_PCB + PCB_T, Y_PCB_FRONT, Y_PCB_REAR, BOARD_Z0, BOARD_Z0 + PCB_U)
+    comp = box(X_PCB - COMP_H, X_PCB, Y_PCB_FRONT + 2, Y_PCB_REAR, BOARD_Z0 + 2, BOARD_Z0 + PCB_U - 2)
     return pcb, comp
 
 

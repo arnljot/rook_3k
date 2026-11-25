@@ -31,7 +31,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | `alicia_db9_pitch` | 15.88 | Distance between the centres of the two joystick ports, 13 to 22. Only used with `alicia_backplane=custom`. |
 | `alicia_backplane_cm4_expansion_enable` | false | Only for `mainboard=alicia_itx`. Openings for HDMI, Ethernet and USB on the PiStorm32-Lite CM4 expansion breakout, and two screw holes for the printed support that carries that board. The board is 55 x 107.5 mm and is included in the clearance check. The support is not part of this project. |
 | `rook_height` | 227 | Outer height without the foot. |
-| `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
+| `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves no room between the switch pins and the edge of the mainboard. It has been built and works, as the pins end below the board. |
 | `rook_width` | 117 | Outer width. |
 | `rook_corner_radius` | 4 | Corner radius seen from the front, 0.5 to 6. 0 gives square corners. |
 | `bottom` | foot_grill | `foot_grill` is one grill foot under the whole case. `foot_pads` gives four round feet with a recess for a TPU pad, and the pads. `none` leaves the bottom bare. |

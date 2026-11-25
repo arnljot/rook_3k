@@ -2,6 +2,13 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.33 - The real size of the DeniseITX
+
+- The DeniseITX is larger than the 170 x 170 mm of Mini-ITX. The board outline of revision 2.1 is 172.91 x 171.58 mm, and other revisions may differ. The mounting holes, the rear edge and the edge by the Zorro slots are where the standard has them, so the extra 2.91 mm is at the upper edge and the extra 1.58 mm at the front edge. The model now uses this size for the DeniseITX. The Alicia is given the same size, which is the safe side for the clearance check, though that board may be closer to the standard. `pc_itx` keeps 170 x 170.
+- No printed part changes, and the default depth is still 211. The mainboard has been fitted with the switches at a depth of both 210 and 211, and both work.
+- The depth warning now gives the real distance. At 211 there is 1.0 mm between the pin tips of the switches and the front edge of the mainboard, and at 210 there is none. The pins end below the board. Earlier versions reported 2.6 and 1.6 mm.
+- The minimum depth without front buttons is 191.6, up from 190, and the minimum height is 201.9, up from 199.
+
 ## v0.32 - Openings for the PiStorm32-Lite CM4 expansion on the Alicia
 
 - New option `alicia_backplane_cm4_expansion_enable`, off by default. It adds openings for HDMI, Ethernet and USB above the audio jacks and the PCMCIA slot, and two screw holes for the printed support that carries the board. The pocket on the inside of the rear panel reaches up behind the Ethernet jack.
