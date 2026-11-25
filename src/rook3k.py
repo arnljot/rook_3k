@@ -123,7 +123,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.29"
+VERSION = "v0.30"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -413,8 +413,8 @@ def validate_config():
     if BTN_LENGTHS and D < d_min + 1.0 - eps:
         print(f"warning: rook_depth={D:g} leaves only {D - d_min + 1.6:.1f} mm between the switch pins and the mainboard, "
               f"{d_min + 1.0:.0f} or more is recommended", file=sys.stderr)
-    if not 0.5 <= R <= 6.0:
-        config_error(f"rook_corner_radius={R:g} must be between 0.5 and 6.0")
+    if R != 0 and not 0.5 <= R <= 6.0:
+        config_error(f"rook_corner_radius={R:g} must be 0, for square corners, or between 0.5 and 6.0")
     if BOTTOM == "foot_grill":
         if FOOT_FINS < 1 or FOOT_FIN_T < 0.8 or FOOT_FIN_GAP < 0:
             config_error("rook_foot_grills must be at least 1, rook_foot_grill_height at least 0.8 and rook_foot_grill_gap not negative")
@@ -470,7 +470,7 @@ def cyl(p, d, r, h):
 
 def rounded(y0, y1, inset=0.0, r=R):
     b = box(inset, W - inset, y0, y1, inset, HB - inset)
-    return b.edges("|Y").fillet(r)
+    return b.edges("|Y").fillet(r) if r > 0 else b
 
 
 def rect_wire(y):

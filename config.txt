@@ -23,7 +23,7 @@ rook_height=227
 rook_depth=211
 rook_width=117
 
-# Corner radius seen from the front, 0.5 to 6.
+# Corner radius seen from the front, 0.5 to 6. 0 gives square corners.
 rook_corner_radius=4
 
 # --- Bottom -------------------------------------------------------------------

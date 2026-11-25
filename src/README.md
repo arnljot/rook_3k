@@ -30,7 +30,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | `rook_height` | 227 | Outer height without the foot. |
 | `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
 | `rook_width` | 117 | Outer width. |
-| `rook_corner_radius` | 4 | Corner radius seen from the front, 0.5 to 6. |
+| `rook_corner_radius` | 4 | Corner radius seen from the front, 0.5 to 6. 0 gives square corners. |
 | `bottom` | foot_grill | `foot_grill` is one grill foot under the whole case. `foot_pads` gives four round feet with a recess for a TPU pad, and the pads. `none` leaves the bottom bare. |
 | `bottom_pad_height`, `bottom_pad_diameter` | 10, 18 | Size of the feet for `foot_pads`. |
 | `rook_foot_grill_height` | 3 | Height of each grill in the foot. |

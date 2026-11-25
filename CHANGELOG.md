@@ -2,6 +2,12 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.30 - Square corners as an option, notes on supports
+
+- `rook_corner_radius=0` gives square corners. Before, the smallest value was 0.5.
+- README has a section on supports and orientation. It explains the floating cantilever warning that Bambu Studio gives for the U-bracket, and what supports and another orientation can do for the rounded corners.
+- The parts of the default configuration are unchanged.
+
 ## v0.29 - Closed meshes in the 3MF project
 
 - The meshes in the 3MF project are now closed. Until now every face of a part had its own copy of the vertices along its edges, so no two faces were joined, and a slicer had to work out for itself how the outlines of each layer fitted together. Bambu Studio got this wrong for one of the four mainboard posts in the U-bracket of v0.24: the post was right in the Prepare view and came out with a thin neck after slicing, and was printed that way.
