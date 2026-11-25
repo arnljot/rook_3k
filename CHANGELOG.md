@@ -2,6 +2,12 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.29 - Closed meshes in the 3MF project
+
+- The meshes in the 3MF project are now closed. Until now every face of a part had its own copy of the vertices along its edges, so no two faces were joined, and a slicer had to work out for itself how the outlines of each layer fitted together. Bambu Studio got this wrong for one of the four mainboard posts in the U-bracket of v0.24: the post was right in the Prepare view and came out with a thin neck after slicing, and was printed that way.
+- `src/make_3mf.py` joins the vertices and gives a warning if a mesh is still not closed.
+- The parts themselves are unchanged, and so are the STEP files. A project made with an earlier version should be made again, or the parts imported from the STEP files.
+
 ## v0.28 - Eject button for the floppy drive
 
 - New part `button_eject.step`. A Chinon FZ-354 without face plate has no button of its own, only a sheet metal hook. The button is a press fit on the hook, like a saddle: a lip goes down behind the bent strip and the tongue of the hook goes up into the button. It goes on the drive first, and threads into the front panel when the side panel is swung in on its front edge. That movement is checked in the model. The face of the button is flat, parallel to the front of the case, with rounded edges.

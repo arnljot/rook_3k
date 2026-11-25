@@ -55,11 +55,21 @@ if d.FLOPPY:
                                           for k, s in enumerate(d.EJECT_SLOTS_TEST)]))
 
 
-def mesh(shape, R):
+def mesh(shape, R, name=""):
     s = shape.val() if hasattr(shape, "val") else shape
     vs, ts = s.tessellate(0.02, 0.15)
-    v = np.array([[p.x, p.y, p.z] for p in vs]) @ R.T
-    return v, np.array(ts, int)
+    v = np.array([[p.x, p.y, p.z] for p in vs])
+    t = np.array(ts, int)
+    # The tessellation gives every face its own vertices. Weld them, so the mesh is closed and a slicer
+    # does not have to guess how the outlines of a layer join up.
+    _, first, inv = np.unique(np.round(v, 5), axis=0, return_index=True, return_inverse=True)
+    v, t = v[first], inv.reshape(-1)[t]
+    t = t[(t[:, 0] != t[:, 1]) & (t[:, 1] != t[:, 2]) & (t[:, 2] != t[:, 0])]
+    e = np.concatenate([t[:, [0, 1]], t[:, [1, 2]], t[:, [2, 0]]])
+    fwd = set(map(tuple, e))
+    if len(fwd) != len(e) or any((b, a) not in fwd for a, b in fwd):
+        print(f"warning: the mesh of {name} is not closed", file=sys.stderr)
+    return v @ R.T, t
 
 
 cols = int(math.ceil(math.sqrt(len(PLATES))))
@@ -71,7 +81,7 @@ for pi, (pname, parts) in enumerate(PLATES):
     inst = []
     n = len(parts)
     for k, (name, shape, R) in enumerate(parts):
-        v, t = mesh(shape, R)
+        v, t = mesh(shape, R, name)
         mn, mx = v.min(0), v.max(0)
         v = v - [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, mn[2]]      # centred in XY, standing on Z = 0
         mid, wid = oid + 1, oid + 2

@@ -123,7 +123,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.28"
+VERSION = "v0.29"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
