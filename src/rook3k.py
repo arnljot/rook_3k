@@ -26,6 +26,7 @@ CONFIG_DEFAULTS = {
     "mainboard": "denise_itx",
     "alicia_backplane": "standard",
     "alicia_db9_pitch": 15.88,
+    "alicia_backplane_cm4_expansion_enable": False,
     "rook_height": 227.0,
     "rook_depth": 211.0,
     "rook_width": 117.0,
@@ -126,13 +127,17 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.31"
+VERSION = "v0.32"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
 if MAINBOARD == "alicia_itx":
     print("warning: the cut-outs for mainboard=alicia_itx follow an I/O shield made for the Alicia, but have not been "
           "tried with a board in this case yet", file=sys.stderr)
+CM4 = CFG["alicia_backplane_cm4_expansion_enable"]
+if CM4 and MAINBOARD != "alicia_itx":
+    config_error(f"alicia_backplane_cm4_expansion_enable=true is not possible with mainboard={MAINBOARD}. The CM4 expansion "
+                 "is for the PiStorm32-Lite, which fits the Alicia only")
 HAS_ZORRO = MAINBOARD == "denise_itx"
 ZORRO_KEYS = ("zorro_slot_1", "zorro_slot_2")
 for _k in ZORRO_KEYS:
@@ -281,6 +286,17 @@ if MAINBOARD == "alicia_itx":
     # The connector housings and the rear edge of the PCB sit in a pocket on the inside of the rear panel, so the
     # outside stays flat and the connectors reach as far out as through a sheet metal shield.
     IO_POCKET = ((-0.03, 3.41), (174.18, max(38.41, _db[1][1] + 7.2)))
+    # PiStorm32-Lite CM4 expansion breakout (PiStorm32 IO revB): a 55.0 x 107.5 mm board above the mainboard with HDMI,
+    # Ethernet and USB at the rear. The openings and the two screw holes for its support are taken from the same shield,
+    # the outline of the board from its published fabrication files.
+    CM4_HDMI = [(73.20, 36.50), (89.20, 36.50), (89.20, 32.10), (86.70, 29.95), (75.75, 29.95), (73.20, 32.10)]
+    CM4_RECTS = [(91.60, 29.40, 108.60, 44.35), (111.00, 30.15, 126.10, 37.70)]     # Ethernet, USB
+    CM4_SCREWS = [(82.10, 25.27, 3.2), (118.10, 25.27, 3.2)]                         # for the printed support of the board
+    CM4_POCKET = ((71.5, 38.0), (128.7, 45.7))                                        # the pocket reaches up behind the Ethernet jack
+    CM4_BOARD = (72.6, 127.6, 27.8, 29.4, 107.5)                                      # sx0, sx1, sy0, sy1 and length
+    if CM4:
+        IO_RECTS += CM4_RECTS
+        IO_CIRCLES += CM4_SCREWS
 IO_POCKET_LEFT = 1.0               # material left in the pocket
 IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
 IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
@@ -800,6 +816,13 @@ def rear_panel():
         for (sx, sy, w, h) in IO_OVALS:
             x, z = io_to_panel(sx, sy)
             p = p.cut(cq.Workplane("XZ").center(x, z).ellipse(h / 2, w / 2).extrude(50, both=True).translate((0, Y_TUBE1, 0)))
+        pockets = [IO_POCKET] + ([CM4_POCKET] if CM4 else [])
+        if CM4:
+            pts = [io_to_panel(sx, sy) for sx, sy in CM4_HDMI]
+            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).translate((0, Y_TUBE1, 0)))
+        for pk in pockets[1:]:
+            (xa, za), (xb, zb) = io_to_panel(*pk[0]), io_to_panel(*pk[1])
+            p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
         (xa, za), (xb, zb) = io_to_panel(*IO_POCKET[0]), io_to_panel(*IO_POCKET[1])
         p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
     if MAINBOARD == "pc_itx":
@@ -914,6 +937,15 @@ def ref_board():
     return pcb, comp
 
 
+def ref_cm4():
+    # the CM4 expansion board, and the block of connectors at its rear end
+    sx0, sx1, sy0, sy1, length = CM4_BOARD
+    (xa, za), (xb, zb) = io_to_panel(sx0, sy0), io_to_panel(sx1, sy1)
+    b = box(min(xa, xb), max(xa, xb), Y_PCB_REAR - length, Y_PCB_REAR, min(za, zb), max(za, zb))
+    (xc, zc), (xd, zd) = io_to_panel(73.2, sy1), io_to_panel(126.1, 44.35)
+    return b.union(box(min(xc, xd), max(xc, xd), Y_PCB_REAR - 21.0, Y_PCB_REAR, min(zc, zd), max(zc, zd)))
+
+
 def ref_floppy():
     xl = XC - FD_SLOT_FROM_TOP          # lid towards the left
     return box(xl, xl + FD_H, T_FRONT + FD_GAP, T_FRONT + FD_GAP + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
@@ -988,6 +1020,8 @@ def check_clearances():
     items = [("the mainboard", pcb, "board"), ("the component zone above the mainboard", comp, "board"),
              ("the PicoPSU", ref_picopsu(), "board")]
     items += [(f"the Zorro card in slot {i + 1}", c, "board") for i, c in zip([i for i, on in enumerate(ZORRO_CARDS) if on], ref_zorro())]
+    if CM4:
+        items.append(("the CM4 expansion board", ref_cm4(), "board"))
     if FLOPPY:
         items.append(("the floppy drive", ref_floppy(), None))
     if SSD:
@@ -1066,6 +1100,8 @@ if __name__ == "__main__":
         asm.add(c, name=f"REF_zorro{i+1}", color=cq.Color(0.1, 0.6, 0.2))
     if SSD:
         asm.add(ref_ssd(), name="REF_ssd", color=cq.Color(0.3, 0.3, 0.35))
+    if CM4:
+        asm.add(ref_cm4(), name="REF_cm4_expansion", color=cq.Color(0.1, 0.2, 0.6))
     asm.save(os.path.join(out, f"rook3k_{VERSION}.step"))
     if FLOPPY:
         tb = floppy_test_gauge()

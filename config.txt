@@ -20,6 +20,10 @@ mainboard=denise_itx
 alicia_backplane=standard
 alicia_db9_pitch=15.88
 
+# Only for mainboard=alicia_itx. Openings for the PiStorm32-Lite CM4 expansion breakout, which puts HDMI, Ethernet
+# and USB above the audio jacks and the PCMCIA slot, and two screw holes for the printed support of that board.
+alicia_backplane_cm4_expansion_enable=false
+
 # --- Case size ---------------------------------------------------------------
 # Outer height (without the foot), depth and width of the case.
 # Minimum sizes apply and depend on the options below. The script stops with an error if a value

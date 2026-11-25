@@ -2,6 +2,14 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.32 - Openings for the PiStorm32-Lite CM4 expansion on the Alicia
+
+- New option `alicia_backplane_cm4_expansion_enable`, off by default. It adds openings for HDMI, Ethernet and USB above the audio jacks and the PCMCIA slot, and two screw holes for the printed support that carries the board. The pocket on the inside of the rear panel reaches up behind the Ethernet jack.
+- The openings and the screw holes are taken from the same I/O shield as the other Alicia cut-outs. The outline of the board, 55.0 x 107.5 mm, is taken from its published fabrication files, and the board is included in the clearance check.
+- The option is refused for other mainboards. The expansion belongs to the PiStorm32-Lite, which is made for the Amiga 1200 and its clones.
+- The support for the board is not part of this project. The screw holes are where the shield has them.
+- The parts of the default configuration are unchanged.
+
 ## v0.31 - Alicia cut-outs checked against an I/O shield
 
 - The cut-outs for `mainboard=alicia_itx` now follow an I/O shield that was made for the Alicia and is in use with real boards, used here with the permission of its maker. The positions from the 3D model were 0.6 to 0.7 mm off sideways, the same for every connector, and within 0.4 mm in height except for the audio jacks.
