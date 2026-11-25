@@ -2,6 +2,15 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.28 - Eject button for the floppy drive
+
+- New part `button_eject.step`. A Chinon FZ-354 without face plate has no button of its own, only a sheet metal hook. The button is a press fit on the hook, like a saddle: a lip goes down behind the bent strip and the tongue of the hook goes up into the button. It goes on the drive first, and threads into the front panel when the side panel is swung in on its front edge. That movement is checked in the model. The face of the button is flat, parallel to the front of the case, with rounded edges.
+- `eject_test_buttons.step` has the button with slots of 0.5, 0.6 and 0.7 mm for the sheet metal, marked with one, two and three notches. It has its own plate in the 3MF project. The buttons are printed standing on end, with support under the lip.
+- The cut-out in the front panel moves 2.2 mm towards the end of the disk slot and sits wholly on the chamfer, 0.7 mm from the groove. It has rounded corners.
+- The drive sits 2.6 mm behind the front panel, up from 0.3, to make room for the hook and the button. The mounting holes in the shelf of the side panel move with it.
+- The front panel and the left side panel change. The other parts are the same as in v0.27.
+- The position of the hook is read from pictures of the drive, and its travel is measured roughly. All of it is an estimate until the drive has been tried in a complete case.
+
 ## v0.27 - Alicia 1200 connectors in a pocket on the inside
 
 - Only `mainboard=alicia_itx` changes. The parts of the default configuration are the same as in v0.26.

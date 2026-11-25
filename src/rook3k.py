@@ -123,7 +123,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.27"
+VERSION = "v0.28"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -178,9 +178,25 @@ BOT_M = 45.0        # flat margin, bottom
 GROOVE = 14.0       # flat groove at the bottom of the chamfer
 STEEP = 4.0         # width of the steep chamfer at top and bottom
 SLOT_L, SLOT_W = 100.0, 8.0          # disk slot
-EJECT_L, EJECT_W = 21.0, 5.0         # eject button, position is an ESTIMATE
-EJECT_DX = 11.0     # eject centre in X relative to the centre of the groove ESTIMATE
-EJECT_FROM_TOP = 16.5                # eject centre below the upper end of the disk slot ESTIMATE
+# Eject button for a Chinon FZ-354 without face plate. The drive has a sheet metal hook instead of a button: a strip
+# 24.81 wide and 5.0 high, bent down from the disk tray, with a 9.93 x 1.49 tongue on its upper edge between two legs
+# that leave a 16.66 wide opening. The button sits on the hook like a saddle: a lip goes down behind the strip and the
+# tongue goes up into the button. Measured with calipers where possible. The position is read from pictures: the centre
+# of the hook is 35.7 from the centre of the drive and the lower edge of the strip is 22.6 below the lid. ESTIMATE
+EJECT_L, EJECT_W = 22.0, 5.0         # stem of the button, as seen from the front
+EJECT_R = 0.8                        # corner radius of the stem
+EJECT_DX = GROOVE / 2 + 1.0 + EJECT_W / 2   # stem centre from the centre of the groove: the hole sits just inside the chamfer
+EJECT_FROM_TOP = 14.3                # eject centre below the upper end of the disk slot
+EJECT_OUT = 4.0                      # the flat face stands at least this far out of the chamfer with a disk in the drive
+EJECT_FACE_R = 0.6                   # rounding of the edge of the face
+EJECT_PLATE_T = 1.2                  # the part of the button in front of the hook that is wider than the stem
+EJECT_HOOK_OUT = 1.0                 # the hook stands this far in front of the drive with a disk in, and 1.5 inside without ESTIMATE
+EJECT_TRAVEL = 2.5                   # the hook moves this far in when the button is pressed ESTIMATE
+EJECT_STRIP_LOW = 22.6               # lower edge of the strip below the lid ESTIMATE
+EJECT_STRIP_H, EJECT_TONGUE_H, EJECT_TONGUE_W, EJECT_OPEN_W = 5.0, 1.49, 9.93, 16.66
+EJECT_SLOT = 0.6                     # slot for the sheet metal, which measures 0.45 to 0.55. Press fit, tune with the test buttons
+EJECT_SLOTS_TEST = (0.5, 0.6, 0.7)   # the three test buttons, marked with one, two and three notches
+EJECT_LIP_T, EJECT_LIP_D = 1.2, 5.0  # the lip behind the strip. There is 6 mm of free depth
 LED_TOP_GAP = 2.0   # from the top of the groove to the first LED
 LED_PITCH = 7.0
 BTN_POCKET_D = 3.0  # depth of the pocket for power and reset
@@ -309,7 +325,7 @@ INS_EXT = 4.0       # narrower extension behind the insert, so the screw does no
 # Verified with the test gauge against a Chinon FZ-354 without face plate: all three positions fit, hole height 5.0.
 FD_HOLES_Y = [21.0, 81.0, 111.0]
 FD_HOLE_UP = CFG["floppy_mount_hole_height"]   # hole centre above the bottom plate of the drive. 5.0 for a Chinon FZ-354
-FD_GAP = 0.3                      # gap between the front of the drive and the back of the front panel
+FD_GAP = EJECT_HOOK_OUT + EJECT_PLATE_T + 0.4   # front of the drive to the back of the front panel: hook, button and air
 FD_REAR_HOLE = FD_HOLES_Y[-1]
 SHELF_T = 4.0
 SHELF_Y0, SHELF_Y1 = 1.5, FD_REAR_HOLE + 10.0   # extent of the shelf behind the front panel
@@ -497,6 +513,54 @@ def button(i):
     return b
 
 
+def button_eject(slot=EJECT_SLOT, marks=0):
+    # Eject button that sits on the hook of the drive, see the constants. Drawn with a disk in the drive.
+    # Local coordinates: h down from the lid, f forwards from the front of the drive, a along the hook from its centre.
+    # Printed standing on one end, with support under the lip and the bridge, which start 3 mm above the plate.
+    ez, xl, yd = Z_SLOT1 - EJECT_FROM_TOP, XC - FD_SLOT_FROM_TOP, T_FRONT + FD_GAP
+
+    def bx(h0, h1, f0, f1, a0, a1):
+        return box(xl + h0, xl + h1, yd - f1, yd - f0, ez + a0, ez + a1)
+
+    def face(x):         # front face of the panel at x, in Y
+        if not CFG["chamfer_recess_enable"]:
+            return 0.0
+        return max(0.0, REC * (1 - (x - XC - GROOVE / 2) / CHAMFER_W))
+    f_hook = EJECT_HOOK_OUT                                  # front face of the strip
+    h_low = EJECT_STRIP_LOW
+    h_strip = h_low - EJECT_STRIP_H                          # upper edge of the strip
+    h_tongue = h_strip - EJECT_TONGUE_H                      # upper edge of the tongue
+    h_top = h_tongue - 0.9                                   # top of the button, level with the sheet above the legs
+    half, hl = EJECT_OPEN_W / 2 - 0.25, EJECT_L / 2
+    x0, x1 = XC + EJECT_DX - EJECT_W / 2, XC + EJECT_DX + EJECT_W / 2
+    hs0 = x0 - xl                                            # upper side of the stem
+    f_step = f_hook + EJECT_TRAVEL + 0.3                     # the stem is wider than the hook from here, clear of the drive
+    # stem with a flat face parallel to the front of the case, rounded all round
+    y_face = min(face(x0), face(x1)) - EJECT_OUT
+    b = box(x0, x1, y_face, yd - f_step, ez - hl, ez + hl).edges("|Y").fillet(EJECT_R).faces("<Y").edges().fillet(EJECT_FACE_R)
+    b = b.union(bx(hs0, h_low - 0.1, f_hook, f_step + 0.1, -hl + EJECT_R, hl - EJECT_R))           # neck against the strip
+    b = b.union(bx(h_top, hs0 + 0.1, f_hook, f_hook + EJECT_PLATE_T, -hl, hl))                      # plate in front of the tongue
+    f_back = f_hook - slot - EJECT_LIP_T
+    rear = bx(h_top, h_tongue, f_back, f_hook, -half, half)                                         # bridge over the tongue
+    for s in (-1, 1):                                                                               # beside the tongue
+        a = sorted((s * (EJECT_TONGUE_W / 2 + 0.1), s * half))
+        rear = rear.union(bx(h_tongue, h_strip - 0.1, f_hook - slot, f_hook, a[0], a[1]))
+    rear = rear.union(bx(h_top, h_strip + EJECT_LIP_D - 0.2, f_back, f_hook - slot, -half, half))  # lip behind the strip
+    b = b.union(rear)
+    for k in range(marks):                                   # notches in the upper edge of the plate, at the top when printed
+        a = half + 0.6 + 0.9 * k
+        b = b.cut(bx(h_top - 1, h_top + 0.7, f_hook - 0.1, f_hook + EJECT_PLATE_T + 0.1, a, a + 0.5))
+    return b
+
+
+def eject_test_buttons():
+    # the eject button with three slot widths, side by side, to find the press fit
+    out = cq.Workplane("XY")
+    for k, s in enumerate(EJECT_SLOTS_TEST):
+        out = out.add(button_eject(s, k + 1).translate((16.0 * k, 0, 0)))
+    return out.combine() if hasattr(out, "combine") else out
+
+
 def ref_buttons():
     return [button(i) for i in range(len(BTN_LENGTHS))]
 
@@ -527,7 +591,10 @@ def front_panel():
         # eject on the right chamfer, the drive has its lid towards the left
         ez = Z_SLOT1 - EJECT_FROM_TOP
         ex = XC + EJECT_DX
-        p = p.cut(box(ex - EJECT_W / 2, ex + EJECT_W / 2, -1, T_FRONT + 1, ez - EJECT_L / 2, ez + EJECT_L / 2))
+        c = BTN_CLEAR
+        # 0.4 more on the right, where the button brushes the edge when the side panel is swung in on its front edge
+        p = p.cut(box(ex - EJECT_W / 2 - c, ex + EJECT_W / 2 + c + 0.4, -1, T_FRONT + 1, ez - EJECT_L / 2 - c, ez + EJECT_L / 2 + c)
+                  .edges("|Y").fillet(EJECT_R + c))
     # LED windows at the top of the groove
     for z, on in zip(Z_LEDS, (CFG["led_power_enable"], CFG["led_drive_enable"])):
         if on:
@@ -946,6 +1013,8 @@ for _i, _state in enumerate(ZORRO_SLOTS):
         PARTS[f"zorro_cover_{_i + 1}"] = (lambda i=_i: zorro_cover(i), (0.6, 0.6, 0.6))
 for _i, (_name, _len) in enumerate(FRONT_BUTTONS):
     PARTS[_name] = (lambda i=_i: button(i), (0.9, 0.88, 0.82))
+if FLOPPY:
+    PARTS["button_eject"] = (button_eject, (0.9, 0.88, 0.82))
 PARTS.update({
     "front_panel": (front_panel, (0.85, 0.83, 0.78)),
     "u_bracket": (u_bracket, (0.75, 0.73, 0.68)),
@@ -994,6 +1063,7 @@ if __name__ == "__main__":
     if FLOPPY:
         tb = floppy_test_gauge()
         cq.exporters.export(tb, os.path.join(out, "floppy_test_gauge.step"))
+        cq.exporters.export(eject_test_buttons(), os.path.join(out, "eject_test_buttons.step"))
     if CFG["back_port_vga_enable"]:
         cq.exporters.export(vga_test_gauge(), os.path.join(out, "vga_test_gauge.step"))
     print("ok", out)

@@ -43,7 +43,7 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 | `button_reset` | front | `front`, `back` or `none`. `back` is planned. With no button in the front, the pocket and the switch plate are left out. |
 | `led_power_enable`, `led_drive_enable` | true, true | The power LED window and the drive LED window below it. |
 | `led_window_width`, `led_window_length` | 2.2, 5 | Size of the LED windows. The defaults fit 2 x 5 mm rectangular LEDs. |
-| `floppy_legacy_enable` | true | Legacy 3.5" floppy drive. `false` removes the disk slot, the eject cut-out, the shelf on the side panel and the test gauge. |
+| `floppy_legacy_enable` | true | Legacy 3.5" floppy drive. `false` removes the disk slot, the eject button and its cut-out, the shelf on the side panel and the test gauge. |
 | `floppy_mount_hole_height` | 5 | Height of the mounting holes above the bottom plate of the drive. |
 | `zorro_slot_1`, `zorro_slot_2` | open, open | Slot 1 is the lower one. `open` is an opening with a lip and a blanking cover, `closed` is solid panel, `custom` is solid panel with your own cut-outs, see below. |
 | `ssd_mount_enable` | false | Four ears on the inside of the left side panel for a 2.5" SSD, above the floppy shelf. The drive is screwed through the ears into its side holes with M3 x 6, so nothing shows on the outside. Mount it while the side panel is off the case. |

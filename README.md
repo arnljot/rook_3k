@@ -10,7 +10,7 @@ A 3D-printable tower case for the Amiga DeniseITX Mini-ITX mainboard.
 
 ![Rook 3K shaded, seen from the front and from the rear](out/rook3k_shaded.png)
 
-*Renders of the v0.27 CAD model with the default configuration.*
+*Renders of the v0.28 CAD model with the default configuration.*
 
 The design is a tribute to the Commodore Amiga 3000 desktop case and to the Checkmate 1500 Plus case, which is itself a tribute to the same Amiga 3000. The name follows from that: the rook is the tower among the chess pieces, and 3K is 3000.
 
@@ -18,7 +18,7 @@ A small volume has been desirable but never an absolute goal. Aesthetics and the
 
 ## Status
 
-Work in progress, version 0.27. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector was too shallow at first and has been set with a test gauge. That cut-out is optional and off by default. The front panel, the side panel and the foot have not been printed yet. `mainboard=alicia_itx` gives a rear panel for the Alicia 1200. The dimensions have not been verified against an actual Alicia yet. See [CHANGELOG.md](CHANGELOG.md).
+Work in progress, version 0.28. The U-bracket has been test printed, which verified the switch plate and the mainboard mounting holes, and the floppy mounting holes are verified with the test gauge. A test print of the rear panel verified the I/O cut-outs, the Zorro openings and the DC jack. The recess for the VGA connector was too shallow at first and has been set with a test gauge. That cut-out is optional and off by default. The front panel, the side panel and the foot have not been printed yet. `mainboard=alicia_itx` gives a rear panel for the Alicia 1200. The dimensions have not been verified against an actual Alicia yet. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Printing
 
@@ -65,6 +65,8 @@ The model is designed for M3 x 3.0 brass heat-set inserts from [CNC Kitchen](htt
 
 The power and reset buttons are intended to press ordinary MX-style mechanical keyboard switches. The two switches snap into a plate in the U-bracket with 14 x 14 mm cut-outs, and the printed buttons sit on the switch stems. Keyboard switches are momentary. The switch plate and the fit of the switches are verified in a test print of the U-bracket, and so are the four mainboard mounting holes. The switch pins point towards the front edge of the mainboard with a few millimetres to spare, so solder the wires to the side of the pins, and clip off the plastic locating pegs on the switch if they are in the way.
 
+The front panel is the face plate of the floppy drive, so the eject button is a printed part, `button_eject.step`. A Chinon FZ-354 without face plate has a sheet metal hook where the button goes. The button is a press fit on that hook: a lip goes down behind the bent strip and the tongue of the hook goes up into the button. Put the button on the drive first. Then set the front edge of the side panel against the case and swing the rear edge in, as if it were hinged at the front, so the button threads into its cut-out. The sheet metal measures 0.45 to 0.55 mm, so `eject_test_buttons.step` has the button with 0.5, 0.6 and 0.7 mm slots, marked with one, two and three notches. Print it to find the fit. The buttons stand on end on the plate and need support under the lip. The position of the button and the 2.6 mm between the drive and the front panel are estimates until the drive has been tried in a complete case.
+
 The floppy mounting holes in the side panel shelf are verified with the printed test gauge against a Chinon FZ-354 without face plate. Other drives may have the holes at another height, which is set with `floppy_mount_hole_height` in `config.txt`.
 
 ## Contents
@@ -75,7 +77,7 @@ The floppy mounting holes in the side panel shelf are verified with the printed 
 - `src/render.py` draws the pictures on this page from the model.
 - [src/README.md](src/README.md) explains how to run the scripts, which arguments they take and what each option in `config.txt` does.
 - `out/` holds the exported STEP files, one per part plus the full assembly, and the renders.
-- `rook3k_v0.27.3mf` is the Bambu Studio project for v0.27 with the default configuration, for the Bambu Lab H2D.
+- `rook3k_v0.28.3mf` is the Bambu Studio project for v0.28 with the default configuration, for the Bambu Lab H2D.
 - `logo/` holds the logo as SVG: the mark, a lockup with the name, and a badge version for the 25 mm recess in the front panel. The lettering is Space Grotesk, converted to outlines. `rook3k_social_preview.png` is the 1280 x 640 picture used as the social preview of the repository.
 
 ## Trivia

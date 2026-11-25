@@ -74,7 +74,7 @@ def reference_volumes():
 def line_drawings():
     everything = list(PARTS.values())
     feet = pick("foot", "foot_pad", "tpu_pad")
-    buttons = pick("button_power", "button_reset")
+    buttons = pick("button_power", "button_reset", "button_eject")
     open_case = pick("front_panel", "u_bracket", "rear_panel") + feet + buttons + reference_volumes()
     sheet([(line_view(pick("front_panel") + feet + buttons, (0, -1, 0), 500, 1000), "Front"),
            (line_view(everything, (-0.7, -1, 0.45)), "Front left"),
@@ -91,7 +91,7 @@ def line_drawings():
 # ---------------------------------------------------------------- shaded picture
 BEIGE, DARK, LIGHT = (0.86, 0.83, 0.76), (0.74, 0.71, 0.64), (0.93, 0.91, 0.86)
 COLOUR = {"rear_panel": DARK, "foot": DARK, "foot_pad": DARK, "tpu_pad": (0.2, 0.2, 0.2), "zorro_cover": DARK,
-          "button_power": LIGHT, "button_reset": LIGHT}
+          "button_power": LIGHT, "button_reset": LIGHT, "button_eject": LIGHT}
 
 
 def polydata(shape):
