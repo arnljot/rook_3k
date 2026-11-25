@@ -69,7 +69,7 @@ An optional `custom1_add.step` is joined to the panel after the cut, for a lip o
 
 ### Clearance check
 
-Before anything is written, the reference volumes are tested against each other: mainboard, PicoPSU, Zorro cards, floppy drive, SSD and the switches behind the buttons. If two of them occupy the same space the script stops and names them. The check is only as good as the volumes, which are simple boxes.
+Before anything is written, the reference volumes are tested against each other: mainboard, PicoPSU, Zorro cards, the RAM module of the DeniseITX, floppy drive, SSD and the switches behind the buttons. If two of them occupy the same space the script stops and names them. The check is only as good as the volumes, which are simple boxes.
 
 ## make_3mf.py
 

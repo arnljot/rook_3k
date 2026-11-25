@@ -2,6 +2,12 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.34 - The RAM module of the DeniseITX in the clearance check
+
+- The SIMM that stands along the upper edge of the DeniseITX is now a reference volume, 26.0 mm high, and part of the clearance check. Modules are usually 25.4 to 26.0 mm high, and the PlusRAM-2 is 25.33. Until now the tallest thing the model knew of on the board, apart from the PicoPSU and the Zorro cards, was 14 mm.
+- With the default case there is 15.9 mm between the module and the floppy drive. A module of 31.75 mm, which exists but is uncommon, would still have 10.1 mm.
+- No printed part changes.
+
 ## v0.33 - The real size of the DeniseITX
 
 - The DeniseITX is larger than the 170 x 170 mm of Mini-ITX. The board outline of revision 2.1 is 172.91 x 171.58 mm, and other revisions may differ. The mounting holes, the rear edge and the edge by the Zorro slots are where the standard has them, so the extra 2.91 mm is at the upper edge and the extra 1.58 mm at the front edge. The model now uses this size for the DeniseITX. The Alicia is given the same size, which is the safe side for the clearance check, though that board may be closer to the standard. `pc_itx` keeps 170 x 170.

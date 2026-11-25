@@ -127,7 +127,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.33"
+VERSION = "v0.34"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -331,6 +331,10 @@ IO_CLEAR = 0.2
 # Rear edge of the PCB to the inside of the rear panel ESTIMATE. Negative for the Alicia, whose edge sits in the pocket
 IO_GAP = IO_POCKET_LEFT - T_REAR + 1.0 if MAINBOARD == "alicia_itx" else 1.0
 COMP_H = 14.0       # tallest ordinary component ESTIMATE
+# RAM module of the DeniseITX: a SIMM that stands on the board along the upper edge. Modules are usually 25.4 to 26.0
+# high, and the PlusRAM-2 is 25.33. A few are as high as 31.75. Position and seat height from a 3D model of the board.
+RAM_H, RAM_SEAT = 26.0, 0.5          # height of the module, and the lower edge of the module above the board
+RAM_U, RAM_V = (162.9, 171.5), (41.4, 149.0)
 ITX_HOLES = [(6.35, 10.16), (163.83, 33.02), (6.35, 165.1), (163.83, 165.1)]  # (u from the Zorro edge, v from the rear edge)
 
 # floppy drive, standard 3.5"
@@ -954,6 +958,11 @@ def ref_cm4():
     return b.union(box(min(xc, xd), max(xc, xd), Y_PCB_REAR - 21.0, Y_PCB_REAR, min(zc, zd), max(zc, zd)))
 
 
+def ref_ram():
+    return box(X_PCB - RAM_SEAT - RAM_H, X_PCB, Y_PCB_REAR - RAM_V[1], Y_PCB_REAR - RAM_V[0],
+               BOARD_Z0 + RAM_U[0], BOARD_Z0 + RAM_U[1])
+
+
 def ref_floppy():
     xl = XC - FD_SLOT_FROM_TOP          # lid towards the left
     return box(xl, xl + FD_H, T_FRONT + FD_GAP, T_FRONT + FD_GAP + FD_L, ZC_SLOT - FD_W / 2, ZC_SLOT + FD_W / 2)
@@ -1030,6 +1039,8 @@ def check_clearances():
     items += [(f"the Zorro card in slot {i + 1}", c, "board") for i, c in zip([i for i, on in enumerate(ZORRO_CARDS) if on], ref_zorro())]
     if CM4:
         items.append(("the CM4 expansion board", ref_cm4(), "board"))
+    if MAINBOARD == "denise_itx":
+        items.append(("the RAM module", ref_ram(), "board"))
     if FLOPPY:
         items.append(("the floppy drive", ref_floppy(), None))
     if SSD:
@@ -1110,6 +1121,8 @@ if __name__ == "__main__":
         asm.add(ref_ssd(), name="REF_ssd", color=cq.Color(0.3, 0.3, 0.35))
     if CM4:
         asm.add(ref_cm4(), name="REF_cm4_expansion", color=cq.Color(0.1, 0.2, 0.6))
+    if MAINBOARD == "denise_itx":
+        asm.add(ref_ram(), name="REF_ram_module", color=cq.Color(0.1, 0.5, 0.3))
     asm.save(os.path.join(out, f"rook3k_{VERSION}.step"))
     if FLOPPY:
         tb = floppy_test_gauge()
