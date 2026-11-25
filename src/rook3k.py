@@ -127,7 +127,7 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.35"
+VERSION = "v0.36"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
@@ -268,13 +268,27 @@ IO_AP_W, IO_AP_H = 158.75, 44.45   # ATX I/O aperture
 IO_BELOW_PCB = 2.24                # edge of the aperture below the underside of the PCB (ATX)
 IO_CENTER_U = 92.2                 # centre of the aperture measured from the Zorro edge. Fitted to a picture of the board, verified in a test print of the rear panel
 IO_FLANGE, IO_FLANGE_T = 2.0, 1.5  # flange of the shield (no longer used, the shield is built into the rear panel)
-# Through cut-outs following the DeniseITX I/O shield layout, in the shield's own coordinates (0..162.75 x 0..48.45)
-IO_RECTS = [(16.1, 5.0, 151.25, 18.6), (16.1, 24.5, 100.75, 38.1)]          # (sx0, sy0, sx1, sy1)
-IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (sx, sy, diameter)
+# Cut-outs for the DeniseITX in shield coordinates (0..162.75 x 0..48.45): sx = 173.575 - u, sy = height above the
+# board + 5.81. One opening per connector. The round openings, and the extent of the D-sub connectors along the
+# edge, are verified in a test print with plugs in every port. The centres of the D-sub connectors are from a 3D
+# model of the board, which agrees with that print within 0.4 mm. Until v0.35 the D-sub connectors shared two long
+# rectangles, (16.1, 5.0)-(151.25, 18.6) and (16.1, 24.5)-(100.75, 38.1).
+IO_RECTS = []                                                               # (sx0, sy0, sx1, sy1)
+IO_CIRCLES = [(157.5, 12.9, 7.5), (9.0, 12.35, 11.5), (9.0, 27.6, 11.5)]    # (sx, sy, diameter): audio, mouse, keyboard
+# D-sub connectors: (sx, sy, distance between the jack screws). The lower row is 6.35 above the board, the upper 25.40
+IO_DSUB = [(125.53, 12.16, 44.27),                                          # DB23 video
+           (84.73, 12.16, 25.0), (84.73, 31.21, 25.0),                      # two DB9, stacked: joystick and mouse
+           (42.50, 12.16, 47.04), (42.50, 31.21, 47.04)]                    # two DB25, stacked: parallel and serial
+IO_OVALS = []
+# The fronts of the connector housings stand 2.8 to 3.1 mm behind the rear edge of the board, measured, which is
+# 2 mm into the rear panel. They sit in pockets on the inside, so the panel closes against the U-bracket and the
+# shells reach as far out as through a sheet metal shield. Kept clear of the Zorro openings.
+IO_POCKETS = [((0.4, 5.2), (152.9, 19.2)), ((0.4, 19.2), (102.1, 38.4))]
+IO_POCKET_LEFT = 0.8               # material left in the pockets
 # Zorro cards: two slots, card planes read from a picture of the board and verified in a test print of the rear panel
 if MAINBOARD == "pc_itx":
     # standard ATX aperture for a loose I/O shield, with a pocket on the inside so the shield can clip to a thin rim
-    IO_RECTS, IO_CIRCLES = [(2.0, 2.0, 2.0 + IO_AP_W, 2.0 + IO_AP_H)], []
+    IO_RECTS, IO_CIRCLES, IO_DSUB, IO_POCKETS = [(2.0, 2.0, 2.0 + IO_AP_W, 2.0 + IO_AP_H)], [], [], []
 if MAINBOARD == "alicia_itx":
     # Cut-outs in shield coordinates, taken from an I/O shield made for the Alicia 1200 and used with real boards.
     # The positions agree within 0.7 mm with a 3D model of the board. Not tried with a board in this case yet.
@@ -284,14 +298,15 @@ if MAINBOARD == "alicia_itx":
         config_error(f"alicia_db9_pitch={ALICIA_DB9_PITCH:g} must be between 13 and 22")
     _hd = (19.10, 31.00)                                         # HD15 (RGB), above keyboard and mouse
     _db = [(51.88, 12.15), (51.88, 12.15 + ALICIA_DB9_PITCH)]    # two DB9, stacked
-    IO_DSUB = [_hd] + _db                                        # D-shaped openings, wide side away from the PCB
+    IO_DSUB = [(c[0], c[1], 25.0) for c in [_hd] + _db]          # D-shaped openings, wide side away from the PCB
     IO_RECTS = [(96.60, 4.80, 160.60, 16.60)]                    # PCMCIA
     IO_CIRCLES = [(10.50, 11.95, 11.5), (27.75, 12.15, 11.5)]    # PS/2 keyboard and mouse
     IO_CIRCLES += [(c[0] + dx, c[1], 3.4) for c in [_hd] + _db for dx in (-12.5, 12.5)]   # jack screws
     IO_OVALS = [(75.50, 12.95, 11.0, 12.5), (89.35, 12.95, 11.0, 12.5)]                   # audio: centre, width, height
     # The connector housings and the rear edge of the PCB sit in a pocket on the inside of the rear panel, so the
     # outside stays flat and the connectors reach as far out as through a sheet metal shield.
-    IO_POCKET = ((-0.03, 3.41), (174.18, max(38.41, _db[1][1] + 7.2)))
+    IO_POCKETS = [((-0.03, 3.41), (174.18, max(38.41, _db[1][1] + 7.2)))]
+    IO_POCKET_LEFT = 1.0               # material left in the pocket
     # PiStorm32-Lite CM4 expansion breakout (PiStorm32 IO revB): a 55.0 x 107.5 mm board above the mainboard with HDMI,
     # Ethernet and USB at the rear. The openings and the two screw holes for its support are taken from the same shield,
     # the outline of the board from its published fabrication files.
@@ -303,9 +318,10 @@ if MAINBOARD == "alicia_itx":
     if CM4:
         IO_RECTS += CM4_RECTS
         IO_CIRCLES += CM4_SCREWS
-IO_POCKET_LEFT = 1.0               # material left in the pocket
+        IO_POCKETS.append(CM4_POCKET)
 IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
-IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
+IO_SY_MAX = max([r[3] for r in IO_RECTS] + [pk[1][1] for pk in IO_POCKETS])
+IO_X_MIN = (W - T - STANDOFF) - (IO_SY_MAX - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs and pockets
 VENT_X0, VENT_X1 = 10.0, min(64.0, IO_X_MIN - 2.0)       # exhaust vents, kept clear of the I/O cut-outs
 ZORRO_U = [5.2, 5.2 + 15.24]       # card plane from the lower edge of the mainboard
 ZORRO_OPEN_W = 11.0
@@ -822,23 +838,24 @@ def rear_panel():
     for (sx, sy, dia) in IO_CIRCLES:
         x, z = io_to_panel(sx, sy)
         p = p.cut(cyl((x, y0, z), (0, 1, 0), dia / 2, T_REAR + 2))
-    if MAINBOARD == "alicia_itx":
-        for (sx, sy) in IO_DSUB:
-            x, z = io_to_panel(sx, sy)
-            pts = [(x - 5.9, z - 9.95), (x - 5.9, z + 9.95), (x + 5.9, z + 8.35), (x + 5.9, z - 8.35)]
-            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).edges("|Y").fillet(2.8)
-                      .translate((0, Y_TUBE1, 0)))
-        for (sx, sy, w, h) in IO_OVALS:
-            x, z = io_to_panel(sx, sy)
-            p = p.cut(cq.Workplane("XZ").center(x, z).ellipse(h / 2, w / 2).extrude(50, both=True).translate((0, Y_TUBE1, 0)))
-        pockets = [IO_POCKET] + ([CM4_POCKET] if CM4 else [])
-        if CM4:
-            pts = [io_to_panel(sx, sy) for sx, sy in CM4_HDMI]
-            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).translate((0, Y_TUBE1, 0)))
-        for pk in pockets[1:]:
-            (xa, za), (xb, zb) = io_to_panel(*pk[0]), io_to_panel(*pk[1])
-            p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
-        (xa, za), (xb, zb) = io_to_panel(*IO_POCKET[0]), io_to_panel(*IO_POCKET[1])
+    for (sx, sy, pitch) in IO_DSUB:
+        # D-shaped opening, wide side away from the PCB, with a hole for each jack screw
+        x, z = io_to_panel(sx, sy)
+        a, b = pitch / 2 - 2.55, pitch / 2 - 4.15
+        pts = [(x - 5.9, z - a), (x - 5.9, z + a), (x + 5.9, z + b), (x + 5.9, z - b)]
+        p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).edges("|Y").fillet(2.8)
+                  .translate((0, Y_TUBE1, 0)))
+        if MAINBOARD != "alicia_itx":
+            for dz in (-pitch / 2, pitch / 2):
+                p = p.cut(cyl((x, y0, z + dz), (0, 1, 0), 1.7, T_REAR + 2))
+    for (sx, sy, w, h) in IO_OVALS:
+        x, z = io_to_panel(sx, sy)
+        p = p.cut(cq.Workplane("XZ").center(x, z).ellipse(h / 2, w / 2).extrude(50, both=True).translate((0, Y_TUBE1, 0)))
+    if CM4:
+        pts = [io_to_panel(sx, sy) for sx, sy in CM4_HDMI]
+        p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).translate((0, Y_TUBE1, 0)))
+    for pk in IO_POCKETS:
+        (xa, za), (xb, zb) = io_to_panel(*pk[0]), io_to_panel(*pk[1])
         p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
     if MAINBOARD == "pc_itx":
         xa, za = io_to_panel(-0.3, -0.3)

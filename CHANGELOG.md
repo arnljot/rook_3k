@@ -2,6 +2,14 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.36 - The DeniseITX rear panel closes against the U-bracket
+
+- With the mainboard screwed in, the rear panel stood 1.6 to 1.8 mm off the U-bracket in the middle. The fronts of the connector housings stand 2.8 to 3.1 mm behind the rear edge of the board, which is about 2 mm into the rear panel, and the stacked connectors have a solid front between their two ports that met the panel.
+- The housings now sit in pockets on the inside of the rear panel, 2.2 mm deep, which leaves 0.8 mm. The outside is unchanged and flat, and the shells of the connectors reach as far out as before. The mainboard stays where it was, so the U-bracket does not change.
+- Each connector has its own opening: D-shaped openings with holes for the jack screws for video, the two joystick ports, parallel and serial. Until now they shared two long rectangles. The round openings for keyboard, mouse and audio are as before.
+- The positions along the edge are the ones verified in print. The centres of the D-sub connectors are from a 3D model of the board, and agree with that print within 0.4 mm. The new openings and the pockets have not been printed yet.
+- Only the rear panel changes. The Alicia and `pc_itx` rear panels are the same as in v0.35.
+
 ## v0.35 - More clearance where the rear panel keys into the U-bracket
 
 - The pockets in the rear ribs of the U-bracket have 0.5 mm of clearance on each side of the bosses of the rear panel, up from 0.25. Printed as laid out and without support, one side of each pocket is a small bridge that sags, and the rear panel went in with friction. The screw centres the panel when it is tightened.
