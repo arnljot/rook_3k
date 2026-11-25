@@ -9,8 +9,16 @@
 # pc_itx      Any Mini-ITX board: a standard ATX aperture for the loose I/O shield. No Zorro slots. Not test printed.
 # alicia_itx  Alicia 1200, with its I/O cut-outs built into the rear panel. No Zorro slots.
 #             The board sits 2 mm further back than a DeniseITX, so the U-bracket is not the same.
-#             The dimensions have not been verified against an actual Alicia yet.
+#             The cut-outs follow an I/O shield made for the Alicia. Not tried with a board in this case yet.
 mainboard=denise_itx
+
+# Only for mainboard=alicia_itx. The two joystick ports are one stacked connector, and boards have been built
+# with two different ones. Measure between the centres of the two ports if you are not sure which you have.
+# standard   15.88 mm between the ports, the connector in the bill of materials.
+# daredevil  19.05 mm between the ports.
+# custom     the distance is taken from alicia_db9_pitch below, 13 to 22.
+alicia_backplane=standard
+alicia_db9_pitch=15.88
 
 # --- Case size ---------------------------------------------------------------
 # Outer height (without the foot), depth and width of the case.

@@ -26,7 +26,9 @@ Both scripts read `config.txt` in the repository root. To use another file, add 
 
 | Key | Default | Meaning |
 |---|---|---|
-| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` has I/O cut-outs for the Alicia 1200 and no Zorro slots. Its connectors sit in a pocket on the inside of the rear panel and the board sits 2 mm further back, so the U-bracket differs from the DeniseITX one. The dimensions have not been verified against an actual Alicia yet, and the script gives a warning. |
+| `mainboard` | denise_itx | `denise_itx` has the DeniseITX I/O cut-outs and two Zorro slots. `pc_itx` has a standard ATX aperture for a loose I/O shield and no Zorro slots. `alicia_itx` has I/O cut-outs for the Alicia 1200 and no Zorro slots. Its connectors sit in a pocket on the inside of the rear panel and the board sits 2 mm further back, so the U-bracket differs from the DeniseITX one. The cut-outs follow an I/O shield made for the Alicia, but have not been tried with a board in this case yet, and the script gives a warning. |
+| `alicia_backplane` | standard | Only for `mainboard=alicia_itx`. The two joystick ports are one stacked connector, and boards have been built with two different ones. `standard` has 15.88 mm between the ports, which is the connector in the bill of materials. `daredevil` has 19.05 mm. `custom` takes the distance from `alicia_db9_pitch`. |
+| `alicia_db9_pitch` | 15.88 | Distance between the centres of the two joystick ports, 13 to 22. Only used with `alicia_backplane=custom`. |
 | `rook_height` | 227 | Outer height without the foot. |
 | `rook_depth` | 211 | Outer depth. The minimum is 210, which gives a warning because it leaves less room between the switch pins and the mainboard. |
 | `rook_width` | 117 | Outer width. |

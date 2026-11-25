@@ -2,6 +2,14 @@
 
 All notable changes to Rook 3K, a case for the DeniseITX mainboard. Versions are tagged `vX.Y` in git.
 
+## v0.31 - Alicia cut-outs checked against an I/O shield
+
+- The cut-outs for `mainboard=alicia_itx` now follow an I/O shield that was made for the Alicia and is in use with real boards, used here with the permission of its maker. The positions from the 3D model were 0.6 to 0.7 mm off sideways, the same for every connector, and within 0.4 mm in height except for the audio jacks.
+- The openings take their sizes from the shield: 11.5 mm for keyboard and mouse, larger D-shaped openings for RGB and the joystick ports, oval openings for audio, and a PCMCIA opening of 64.0 x 11.8 mm, which is 3.6 mm higher than before.
+- New option `alicia_backplane`. Alicia boards exist with two different stacked joystick connectors: `standard` with 15.88 mm between the ports and `daredevil` with 19.05 mm. `custom` takes the distance from `alicia_db9_pitch`.
+- The cut-outs have still not been tried with a board in this case, and the script still gives a warning.
+- The parts of the default configuration are unchanged.
+
 ## v0.30 - Square corners as an option, notes on supports
 
 - `rook_corner_radius=0` gives square corners. Before, the smallest value was 0.5.

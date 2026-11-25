@@ -24,6 +24,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # repositor
 # key: default. The type of the default decides how the value in config.txt is parsed.
 CONFIG_DEFAULTS = {
     "mainboard": "denise_itx",
+    "alicia_backplane": "standard",
+    "alicia_db9_pitch": 15.88,
     "rook_height": 227.0,
     "rook_depth": 211.0,
     "rook_width": 117.0,
@@ -61,6 +63,7 @@ CONFIG_DEFAULTS = {
 # allowed values for the keys that take a word
 CONFIG_CHOICES = {
     "mainboard": ("denise_itx", "pc_itx", "alicia_itx"),
+    "alicia_backplane": ("standard", "daredevil", "custom"),
     "zorro_slot_1": ("open", "closed", "custom"),
     "zorro_slot_2": ("open", "closed", "custom"),
     "button_power": ("front", "front_wide", "back", "back_wide", "none"),
@@ -123,13 +126,13 @@ def load_config():
     return cfg, given, folder
 
 
-VERSION = "v0.30"
+VERSION = "v0.31"
 CFG, CFG_GIVEN, CFG_DIR = load_config()      # values, the keys set in the file, and the folder of the file
 FLOPPY = CFG["floppy_legacy_enable"]
 MAINBOARD = CFG["mainboard"]
 if MAINBOARD == "alicia_itx":
-    print("warning: the dimensions for mainboard=alicia_itx have not been verified against an actual Alicia yet",
-          file=sys.stderr)
+    print("warning: the cut-outs for mainboard=alicia_itx follow an I/O shield made for the Alicia, but have not been "
+          "tried with a board in this case yet", file=sys.stderr)
 HAS_ZORRO = MAINBOARD == "denise_itx"
 ZORRO_KEYS = ("zorro_slot_1", "zorro_slot_2")
 for _k in ZORRO_KEYS:
@@ -262,21 +265,22 @@ if MAINBOARD == "pc_itx":
     # standard ATX aperture for a loose I/O shield, with a pocket on the inside so the shield can clip to a thin rim
     IO_RECTS, IO_CIRCLES = [(2.0, 2.0, 2.0 + IO_AP_W, 2.0 + IO_AP_H)], []
 if MAINBOARD == "alicia_itx":
-    # Not verified against an actual Alicia yet. Connector positions read from a 3D model of the board: u along the rear edge from the
-    # expansion side, h above the top of the PCB. In shield coordinates sx = 173.575 - u and sy = h + 5.81.
-    def _a(u, h):
-        return 173.575 - u, h + 5.81
-    _hd = _a(155.1, 25.3)                       # HD15 (RGB) above two PS/2, one stacked connector
-    _db = [_a(122.4, 6.4), _a(122.4, 22.3)]     # two DB9, stacked
-    IO_DSUB = [_hd] + _db                       # D-shaped openings, wide side away from the PCB
-    IO_RECTS = []
-    IO_RECTS.append((_a(77.1, 0)[0], _a(0, -0.3)[1], _a(14.2, 0)[0], _a(0, 7.9)[1]))      # PCMCIA
-    IO_CIRCLES = [(*_a(163.7, 6.5), 13.5), (*_a(146.4, 6.5), 13.5)]                       # PS/2 keyboard and mouse
-    IO_CIRCLES += [(*_a(98.7, 6.45), 11.0), (*_a(84.9, 6.45), 11.0)]                      # audio right and left
-    IO_CIRCLES += [(c[0] + dx, c[1], 3.2) for c in [_hd] + _db for dx in (-12.5, 12.5)]   # jack screws
+    # Cut-outs in shield coordinates, taken from an I/O shield made for the Alicia 1200 and used with real boards.
+    # The positions agree within 0.7 mm with a 3D model of the board. Not tried with a board in this case yet.
+    # The two joystick ports are one stacked connector, which exists with two distances between the ports.
+    ALICIA_DB9_PITCH = {"standard": 15.88, "daredevil": 19.05}.get(CFG["alicia_backplane"], CFG["alicia_db9_pitch"])
+    if not 13.0 <= ALICIA_DB9_PITCH <= 22.0:
+        config_error(f"alicia_db9_pitch={ALICIA_DB9_PITCH:g} must be between 13 and 22")
+    _hd = (19.10, 31.00)                                         # HD15 (RGB), above keyboard and mouse
+    _db = [(51.88, 12.15), (51.88, 12.15 + ALICIA_DB9_PITCH)]    # two DB9, stacked
+    IO_DSUB = [_hd] + _db                                        # D-shaped openings, wide side away from the PCB
+    IO_RECTS = [(96.60, 4.80, 160.60, 16.60)]                    # PCMCIA
+    IO_CIRCLES = [(10.50, 11.95, 11.5), (27.75, 12.15, 11.5)]    # PS/2 keyboard and mouse
+    IO_CIRCLES += [(c[0] + dx, c[1], 3.4) for c in [_hd] + _db for dx in (-12.5, 12.5)]   # jack screws
+    IO_OVALS = [(75.50, 12.95, 11.0, 12.5), (89.35, 12.95, 11.0, 12.5)]                   # audio: centre, width, height
     # The connector housings and the rear edge of the PCB sit in a pocket on the inside of the rear panel, so the
     # outside stays flat and the connectors reach as far out as through a sheet metal shield.
-    IO_POCKET = (_a(173.6, -2.4), _a(-0.6, 32.6))
+    IO_POCKET = ((-0.03, 3.41), (174.18, max(38.41, _db[1][1] + 7.2)))
 IO_POCKET_LEFT = 1.0               # material left in the pocket
 IO_SHIELD_W, IO_SHIELD_H, IO_RIM = 162.75, 48.45, 1.0    # outline of a loose ATX shield, and the rim left for it to clip to
 IO_X_MIN = (W - T - STANDOFF) - (max(r[3] for r in IO_RECTS) - 2.0 - IO_BELOW_PCB)   # left edge of the I/O cut-outs
@@ -790,9 +794,12 @@ def rear_panel():
     if MAINBOARD == "alicia_itx":
         for (sx, sy) in IO_DSUB:
             x, z = io_to_panel(sx, sy)
-            pts = [(x - 5.4, z - 9.3), (x - 5.4, z + 9.3), (x + 5.4, z + 7.8), (x + 5.4, z - 7.8)]
-            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).edges("|Y").fillet(2.2)
+            pts = [(x - 5.9, z - 9.95), (x - 5.9, z + 9.95), (x + 5.9, z + 8.35), (x + 5.9, z - 8.35)]
+            p = p.cut(cq.Workplane("XZ").polyline(pts).close().extrude(50, both=True).edges("|Y").fillet(2.8)
                       .translate((0, Y_TUBE1, 0)))
+        for (sx, sy, w, h) in IO_OVALS:
+            x, z = io_to_panel(sx, sy)
+            p = p.cut(cq.Workplane("XZ").center(x, z).ellipse(h / 2, w / 2).extrude(50, both=True).translate((0, Y_TUBE1, 0)))
         (xa, za), (xb, zb) = io_to_panel(*IO_POCKET[0]), io_to_panel(*IO_POCKET[1])
         p = p.cut(box(min(xa, xb), max(xa, xb), y0, Y_TUBE1 + T_REAR - IO_POCKET_LEFT, min(za, zb), max(za, zb)))
     if MAINBOARD == "pc_itx":
